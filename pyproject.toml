@@ -1,0 +1,28 @@
+[project]
+name = "ytsum"
+version = "0.1.0"
+description = "YouTube Summarizing app"
+authors = [
+    {name = "Omar Ali Sheikh", email = "sheikhomar@users.noreply.github.com"},
+]
+dependencies = []
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=3.7.1",
+    "pyre-check>=0.9.22",
+    "pytest>=8.3.1",
+]
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.scripts]
+tests = "pytest -vv -s tests"
