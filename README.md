@@ -31,9 +31,17 @@ A Python project focused on summarizing YouTube videos.
     cp .env.template .env
     ```
 
-6. Install [Azure Functions Core Tools](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local) to develop and test Azure Functions locally.
+6. Test Azure Functions locally:
 
-   You can start the function app by running:
+   First, you need to install [Azure Functions Core Tools](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local).
+
+   Then, create `local.settings.json` file by copying the `local.settings.json.template` file and updating the values as needed:
+
+   ```bash
+    cp local.settings.json.template local.settings.json
+    ```
+
+   Finally, you can start the function app by running:
 
    ```bash
    func start
