@@ -50,7 +50,7 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2022-09-01' = {
   kind: 'linux'
 }
 
-resource functionApp 'Microsoft.Web/sites@2021-03-01' = {
+resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
   name: functionAppName
   location: regionName
   kind: 'functionapp'
