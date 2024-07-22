@@ -51,6 +51,21 @@ if ! az group create -n "${RESOURCE_GROUP_NAME}" -l "${REGION}"; then
     exit 1
 fi
 
+# To avoid getting `MissingSubscriptionRegistration` error, we need to register the
+# required resource providers. This is required only once per subscription.
+echo "Registering required resource providers..."
+REQUIRED_PROVIDERS=(
+    "Microsoft.Storage"
+    "Microsoft.Web"
+)
+for provider in "${REQUIRED_PROVIDERS[@]}"; do
+    echo " - Registering provider ${provider}..."
+    if ! az provider register -n "${provider}" --wait; then
+        log_error "Failed to register provider ${provider}."
+        exit 1
+    fi
+done
+
 # Create a service principal that allows our GitHub Actions to deploy Azure resources in
 # the ${RESOURCE_GROUP_NAME}. The minimum required permissions are Contributor access to
 # the resource group..
