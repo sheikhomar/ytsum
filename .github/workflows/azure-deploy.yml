@@ -46,11 +46,18 @@ jobs:
         run: |
           pdm run python -m ensurepip  
           pdm install --prod --frozen-lockfile --no-editable
-          mv .venv .python_packages
+
+      - name: "Build Azure Function App"
+        shell: bash
+        run: |
+          mkdir -p ./func-app-dist
+          mv .venv ./func-app-dist/.python_packages
+          mv function_app.py ./func-app-dist
+          mv host.json ./func-app-dist
 
       - name: "Run Azure Functions Action"
         uses: Azure/functions-action@v1
         id: fa
         with:
           app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-          package: ./
+          package: ./func-app-dist
