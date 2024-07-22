@@ -38,14 +38,15 @@ jobs:
         uses: pdm-project/setup-pdm@v4
         with:
           python-version-file: pyproject.toml
-          enable-pep582: true
+          enable-pep582: false
           cache: true
 
-      - name: "Resolve Project Dependencies Using PDM"
+      - name: "Resolve Project Dependencies using PDM"
         shell: bash
         run: |
+          pdm run python -m ensurepip  
           pdm install --prod --frozen-lockfile --no-editable
-          pdm run python -m ensurepip
+          mv .venv .python_packages
 
       - name: "Run Azure Functions Action"
         uses: Azure/functions-action@v1
