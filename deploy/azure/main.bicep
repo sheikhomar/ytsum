@@ -22,6 +22,7 @@ var regionName = 'westeurope'
 var storageAccountName = '${prefix}${workloadName}${regionCode}${releaseEnv}st'
 var hostingPlanName = '${prefix}-${workloadName}-${regionCode}-${releaseEnv}-asp'
 var functionAppName = '${prefix}-${workloadName}-${regionCode}-${releaseEnv}-func'
+var applicationInsightsName = '${prefix}-${workloadName}-${regionCode}-${releaseEnv}-appi'
 var functionWorkerRuntime = 'python'
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
@@ -48,6 +49,16 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2022-09-01' = {
     reserved: true
   }
   kind: 'linux'
+}
+
+resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: applicationInsightsName
+  location: regionName
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    Request_Source: 'rest'
+  }
 }
 
 resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
@@ -80,6 +91,10 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
         {
           name: 'FUNCTIONS_WORKER_RUNTIME'
           value: functionWorkerRuntime
+        }
+        {
+          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value: applicationInsights.properties.InstrumentationKey
         }
       ]
       ftpsState: 'FtpsOnly'
