@@ -101,6 +101,10 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
           value: 'Development'
         }
         {
+          name: 'AzureWebJobsDisableHomepage'
+          value: 'true'
+        }
+        {
           name: 'PYTHONPATH'
           value: '.python_packages/lib/site-packages:.'
         }
