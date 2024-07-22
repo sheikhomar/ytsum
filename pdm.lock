@@ -5,10 +5,10 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:b196e300c2c64e91ad3b5e7738854981cd05ee68c87215c197ca9d85955ef19e"
+content_hash = "sha256:aa00fe1b3d130e64cfe05077f19722a7d11963fa89bda0cc6d366a011c5ead84"
 
 [[metadata.targets]]
-requires_python = ">=3.11"
+requires_python = ">=3.11,<3.12"
 
 [[package]]
 name = "cfgv"

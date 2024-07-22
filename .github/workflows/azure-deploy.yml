@@ -44,7 +44,7 @@ jobs:
       - name: "Resolve Project Dependencies Using PDM"
         shell: bash
         run: |
-          pdm install
+          pdm install --prod --frozen-lockfile --no-editable
           pdm run python -m ensurepip
 
       - name: "Run Azure Functions Action"
