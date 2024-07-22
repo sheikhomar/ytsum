@@ -83,6 +83,7 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
         }
       ]
       ftpsState: 'FtpsOnly'
+      linuxFxVersion: 'Python|3.11'
       minTlsVersion: '1.2'
     }
     httpsOnly: true
