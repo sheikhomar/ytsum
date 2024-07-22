@@ -54,6 +54,7 @@ jobs:
           mv .venv ./func-app-dist/.python_packages
           mv function_app.py ./func-app-dist
           mv host.json ./func-app-dist
+          pdm export --no-hashes --pyproject --prod > ./func-app-dist/requirements.txt
 
       - name: "Run Azure Functions Action"
         uses: Azure/functions-action@v1
