@@ -96,6 +96,14 @@ resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
           name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
           value: applicationInsights.properties.InstrumentationKey
         }
+        {
+          name: 'AZURE_FUNCTIONS_ENVIRONMENT'
+          value: 'Development'
+        }
+        {
+          name: 'PYTHONPATH'
+          value: '.python_packages/lib/site-packages:.'
+        }
       ]
       ftpsState: 'FtpsOnly'
       linuxFxVersion: 'Python|3.11'
