@@ -9,8 +9,8 @@ def main() -> None:
     extractor = VideoImageExtractor(
         video_path=video_file_path,
         output_dir=output_dir,
-        threshold=1000,
-        sample_interval_secs=2.0,
+        threshold=0.98,
+        sample_interval_secs=1.0,
     )
     extractor.run()
 

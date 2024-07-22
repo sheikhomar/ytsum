@@ -4,6 +4,7 @@ from typing import Optional
 import cv2
 import numpy as np
 from numpy.typing import NDArray
+from skimage.metrics import structural_similarity
 
 
 class VideoImageExtractor:
@@ -74,18 +75,25 @@ class VideoImageExtractor:
             frame_count += 1
 
             if frame_count % frame_interval == 0:
-                if prev_frame is None or self._images_differ(
-                    img1=prev_frame, img2=frame
+                if (
+                    prev_frame is None
+                    or self._images_differ_using_structural_similarity_index(
+                        img1=prev_frame, img2=frame
+                    )
                 ):
+                    print(
+                        f"Saving frame {frame_count} as frame-{saved_count:04d}.{self._image_format}..."
+                    )
                     self._save_image(image=frame, count=saved_count)
+
                     prev_frame = frame
                     saved_count += 1
 
         video.release()
         print(f"Processed {frame_count} frames, saved {saved_count} images.")
 
-    def _images_differ(self, img1: NDArray, img2: NDArray) -> bool:
-        """Determine if two images differ significantly.
+    def _images_differ_using_mse(self, img1: NDArray, img2: NDArray) -> bool:
+        """Determine if two images differ significantly using MSE.
 
         This method calculates the Mean Squared Error (MSE) between two images
         and compares it to the threshold to determine if they are significantly different.
@@ -104,6 +112,29 @@ class VideoImageExtractor:
         err /= float(img1.shape[0] * img1.shape[1])
         print(f"Error: {err}")
         return err > self._threshold
+
+    def _images_differ_using_structural_similarity_index(
+        self, img1: NDArray, img2: NDArray
+    ) -> bool:
+        """Determine if two images differ significantly using SSIM.
+
+        This method calculates the Structural Similarity Index (SSIM) between two images
+        and compares it to the threshold to determine if they are significantly different.
+
+        Args:
+            img1 (numpy.typing.NDArray): First image for comparison.
+            img2 (numpy.typing.NDArray): Second image for comparison.
+
+        Returns:
+            bool: True if the images differ significantly, False otherwise.
+        """
+        gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+
+        similarity_index = structural_similarity(im1=gray1, im2=gray2)
+
+        print(f"Structural Similarity Index: {similarity_index}")
+        return similarity_index < self._threshold
 
     def _save_image(self, image: NDArray, count: int) -> None:
         """Save an image to the output directory.
