@@ -53,7 +53,3 @@ jobs:
         with:
           app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
           package: ./
-
-      - name: "Logout from Azure"
-        run: |
-          az logout
