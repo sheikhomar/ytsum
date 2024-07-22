@@ -31,7 +31,7 @@ jobs:
       - name: "Get Function App Name"
         id: get-function-app-name
         run: |
-          functionAppName=$(az deployment group show --resource-group ${{ env.AZURE_RG }} --name main --query properties.outputs.functionAppName.value -o tsv)
+          functionAppName=$(az deployment group show --resource-group ${{ secrets.AZURE_RG }} --name main --query properties.outputs.functionAppName.value -o tsv)
           echo "AZURE_FUNCTIONAPP_NAME=$functionAppName" >> $GITHUB_ENV
 
       - name: "Setup PDM"
