@@ -5,7 +5,9 @@ description = "YouTube Summarizing app"
 authors = [
     {name = "Omar Ali Sheikh", email = "sheikhomar@users.noreply.github.com"},
 ]
-dependencies = []
+dependencies = [
+    "azure-functions>=1.20.0",
+]
 requires-python = ">=3.11,<3.12"
 readme = "README.md"
 license = {text = "MIT"}

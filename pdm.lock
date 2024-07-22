@@ -5,10 +5,20 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:aa00fe1b3d130e64cfe05077f19722a7d11963fa89bda0cc6d366a011c5ead84"
+content_hash = "sha256:774e8087266fe6df677ab7b5b60b25ad75d532a52fbdfebe700016ffee2128ad"
 
 [[metadata.targets]]
 requires_python = ">=3.11,<3.12"
+
+[[package]]
+name = "azure-functions"
+version = "1.20.0"
+summary = "Azure Functions for Python"
+groups = ["default"]
+files = [
+    {file = "azure-functions-1.20.0.tar.gz", hash = "sha256:437e8889d7a75379159b457589cb74f6f966d3576067ae6649fafcd9058102e1"},
+    {file = "azure_functions-1.20.0-py3-none-any.whl", hash = "sha256:1d4ad15b10768b78046154d1da392e99634b64b4821dd091d5b9fe3600c49573"},
+]
 
 [[package]]
 name = "cfgv"
