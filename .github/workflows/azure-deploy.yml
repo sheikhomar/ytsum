@@ -1,0 +1,59 @@
+name: Deploy Azure Functions with Bicep
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  RELEASE_ENV: "dev"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout GitHub Action"
+        uses: actions/checkout@v2
+
+      - name: "Login via Azure CLI"
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: "Deploy Azure Resources with Bicep"
+        uses: azure/arm-deploy@v2
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
+          resourceGroupName: ${{ secrets.AZURE_RG }}
+          template: ./deploy/azure/main.bicep
+          parameters: releaseEnv=${{ env.RELEASE_ENV }}
+
+      - name: "Get Function App Name"
+        id: get-function-app-name
+        run: |
+          functionAppName=$(az deployment group show --resource-group ${{ env.AZURE_RG }} --name main --query properties.outputs.functionAppName.value -o tsv)
+          echo "AZURE_FUNCTIONAPP_NAME=$functionAppName" >> $GITHUB_ENV
+
+      - name: "Setup PDM"
+        uses: pdm-project/setup-pdm@v4
+        with:
+          python-version-file: pyproject.toml
+          enable-pep582: true
+          cache: true
+
+      - name: "Resolve Project Dependencies Using PDM"
+        shell: bash
+        run: |
+          pdm install
+          pdm run python -m ensurepip
+
+      - name: "Run Azure Functions Action"
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          package: ./
+
+      - name: "Logout from Azure"
+        run: |
+          az logout
