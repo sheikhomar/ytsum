@@ -66,6 +66,8 @@ class VideoImageExtractor:
         prev_frame: Optional[NDArray] = None
         frame_count: int = 0
         saved_count: int = 0
+        frame_time_ms: float = 0.0
+        prev_frame_time_ms: float = 0.0
 
         while True:
             ret, frame = video.read()
@@ -73,6 +75,7 @@ class VideoImageExtractor:
                 break
 
             frame_count += 1
+            frame_time_ms = video.get(cv2.CAP_PROP_POS_MSEC)
 
             if frame_count % frame_interval == 0:
                 if (
@@ -81,12 +84,16 @@ class VideoImageExtractor:
                         img1=prev_frame, img2=frame
                     )
                 ):
-                    print(
-                        f"Saving frame {frame_count} as frame-{saved_count:04d}.{self._image_format}..."
+                    file_name = self._generate_filename(
+                        frame_number=saved_count,
+                        start_time_ms=prev_frame_time_ms,
+                        end_time_ms=frame_time_ms,
                     )
-                    self._save_image(image=frame, count=saved_count)
+                    print(f"Saving frame {frame_count} as {file_name}...")
+                    self._save_image(image=frame, file_name=file_name)
 
                     prev_frame = frame
+                    prev_frame_time_ms = frame_time_ms
                     saved_count += 1
 
         video.release()
@@ -136,13 +143,44 @@ class VideoImageExtractor:
         print(f"Structural Similarity Index: {similarity_index}")
         return similarity_index < self._threshold
 
-    def _save_image(self, image: NDArray, count: int) -> None:
+    def _save_image(self, image: NDArray, file_name: str) -> None:
         """Save an image to the output directory.
 
         Args:
             image (numpy.typing.NDArray): The image to be saved.
-            count (int): A counter used in generating the filename.
+            file_name (str): The name of the file to save the image as.
         """
-        filename: str = f"frame-{count:04d}.{self._image_format}"
-        filepath: Path = self._output_dir / filename
+        filepath: Path = self._output_dir / file_name
         cv2.imwrite(filename=str(filepath), img=image)
+
+    def _generate_filename(
+        self, frame_number: int, start_time_ms: float, end_time_ms: float
+    ) -> str:
+        """Generate a filename based on frame count and time range.
+
+        Args:
+            frame_number (int): Frame number.
+            start_time_ms (float): Start time of the frame in milliseconds.
+            end_time_ms (float): End time of the frame in milliseconds.
+
+        Returns:
+            str: Generated filename.
+        """
+        start_str = self._format_time(time_ms=start_time_ms)
+        end_str = self._format_time(time_ms=end_time_ms)
+        return f"frame-{frame_number:04d}-{start_str}-{end_str}.{self._image_format}"
+
+    def _format_time(self, time_ms: float) -> str:
+        """Format time in milliseconds to HH_MM_SS_mmm format.
+
+        Args:
+            time_ms (float): Time in milliseconds.
+
+        Returns:
+            str: Formatted time string.
+        """
+        total_seconds = int(time_ms / 1000)
+        milliseconds = int(time_ms % 1000)
+        hours, rem = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(rem, 60)
+        return f"{hours:02d}_{minutes:02d}_{seconds:02d}_{milliseconds:03d}"
