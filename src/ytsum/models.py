@@ -53,4 +53,4 @@ class FrameOutput(BaseModel):
     def load(cls, input_file: Path) -> None:
         with gzip.open(input_file, "rt") as fh:
             json_data = fh.read()
-            cls.model_validate_json(json_data=json_data)
+            return cls.model_validate_json(json_data=json_data)
