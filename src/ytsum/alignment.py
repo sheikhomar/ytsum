@@ -4,60 +4,16 @@ from pathlib import Path
 from typing import List
 
 import webvtt
-from pydantic import BaseModel
+
+from ytsum.models import (
+    Frame,
+    FrameOutput,
+    TranscribedPhrase,
+    Transcription,
+)
+from ytsum.utils import convert_timestamp_to_ms
 
 PHRASE_PATTERN = re.compile(r"<(\d{2}:\d{2}:\d{2}\.\d{3})>(?:<c>)?([^<]+)(?:</c>)?")
-
-
-def convert_timestamp_to_ms(timestamp: str) -> int:
-    """
-    Convert a timestamp string to milliseconds.
-
-    Args:
-        timestamp (str): Timestamp in format "HH:MM:SS.mmm" or "HH:MM:SS:mmm" or "HH_MM_SS_mmm".
-
-    Returns:
-        int: Time in milliseconds.
-    """
-    parts = timestamp.replace(".", ":").replace("_", ":").split(":")
-    h, m, s, ms = parts
-    return int(h) * 3600000 + int(m) * 60000 + int(s) * 1000 + int(ms)
-
-
-class TranscribedPhrase(BaseModel):
-    text: str
-    starts_at: str
-
-    @property
-    def starts_at_ms(self) -> int:
-        return convert_timestamp_to_ms(timestamp=self.starts_at)
-
-
-class Transcription(BaseModel):
-    phrases: List[TranscribedPhrase]
-
-    def get_phrases_in_range(
-        self, start_ms: int, end_ms: int
-    ) -> List[TranscribedPhrase]:
-        return [
-            phrase
-            for phrase in self.phrases
-            if phrase.starts_at_ms >= start_ms and phrase.starts_at_ms < end_ms
-        ]
-
-    def get_end_time(self) -> int:
-        return max(phrase.starts_at_ms for phrase in self.phrases) + 1000
-
-
-class Frame(BaseModel):
-    index: int
-    starts_at_ms: int
-    ends_at_ms: int
-    text: str
-
-
-class FrameOutput(BaseModel):
-    frames: List[Frame]
 
 
 def parse_subtitle_line(line: str) -> List[TranscribedPhrase]:
