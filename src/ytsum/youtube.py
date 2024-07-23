@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 import yt_dlp
 
@@ -72,7 +72,13 @@ class YouTubeVideoDownloader:
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info: Dict[str, object] = ydl.extract_info(self._url, download=False)
+            info: Optional[Dict[str, object]] = ydl.extract_info(
+                self._url, download=False
+            )
+            if info is None:
+                print("No video info found.")
+                return -1
+
             video_title = info.get("title", "Unknown Title")
             file_size = info.get("filesize", 0)
 

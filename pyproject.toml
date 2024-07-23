@@ -13,6 +13,7 @@ dependencies = [
     "tqdm>=4.66.4",
     "requests>=2.32.3",
     "yt-dlp>=2024.7.16",
+    "azure-storage-blob>=12.21.0",
 ]
 requires-python = ">=3.11,<3.12"
 readme = "README.md"
