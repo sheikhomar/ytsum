@@ -1,4 +1,3 @@
-import json
 import re
 from pathlib import Path
 from typing import List
@@ -66,27 +65,24 @@ class SubtitleFrameAligner:
                 start_ms=frame_starts_at_ms, end_ms=frame_ends_at_ms
             )
 
-            frame_text = " ".join([phrase.text.strip() for phrase in phrases])
             output.frames.append(
                 Frame(
                     index=frame_index,
                     starts_at_ms=frame_starts_at_ms,
                     ends_at_ms=frame_ends_at_ms,
-                    text=frame_text,
+                    phrases=phrases,
                 )
             )
 
         # Update the last frame with the remaining transcription text
         last_frame = output.frames[-1]
         last_frame.ends_at_ms = transcription.get_end_time()
-        phrases = transcription.get_phrases_in_range(
+        last_frame.phrases = transcription.get_phrases_in_range(
             start_ms=last_frame.starts_at_ms,
             end_ms=last_frame.ends_at_ms,
         )
-        last_frame.text = " ".join([phrase.text.strip() for phrase in phrases])
 
-        with self._output_file.open("w") as f:
-            json.dump(output.model_dump(), f, indent=2)
+        output.save(output_file=self._output_file)
 
     def _get_transcription(self) -> Transcription:
         phrases: List[TranscribedPhrase] = []
@@ -109,6 +105,6 @@ if __name__ == "__main__":
         "data/downloads/Onf1UqKPMR4/Webinar： Fix Hallucinations in RAG Systems with Pinecone and Galileo [Onf1UqKPMR4].en-orig.vtt"
     )
     frames_dir = Path("data/processed/Onf1UqKPMR4-images")
-    output_file = Path("data/processed/Onf1UqKPMR4-output.json")
+    output_file = Path("data/processed/Onf1UqKPMR4-output.json.gz")
     aligner = SubtitleFrameAligner(vtt_file, frames_dir, output_file)
     aligner.run()
