@@ -56,6 +56,15 @@ jobs:
           mv host.json ./func-app-dist
           pdm export --no-hashes --pyproject --prod > ./func-app-dist/requirements.txt
 
+      - name: "Download and Extract FFmpeg"
+        run: |
+          wget https://github.com/yt-dlp/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz
+          mkdir -p ffmpeg_temp
+          tar -xf ffmpeg-master-latest-linux64-gpl.tar.xz -C ffmpeg_temp
+          mkdir -p ./func-app-dist/tools
+          mv ffmpeg_temp/ffmpeg-master-latest-linux64-gpl/* ./func-app-dist/tools/
+          rm -rf ffmpeg_temp ffmpeg-master-latest-linux64-gpl.tar.xz
+
       - name: "Run Azure Functions Action"
         uses: Azure/functions-action@v1
         id: fa
