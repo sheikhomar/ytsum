@@ -62,7 +62,7 @@ jobs:
           mkdir -p ffmpeg_temp
           tar -xf ffmpeg-master-latest-linux64-gpl.tar.xz -C ffmpeg_temp
           mkdir -p ./func-app-dist/tools
-          mv ffmpeg_temp/ffmpeg-master-latest-linux64-gpl/* ./func-app-dist/tools/
+          mv ffmpeg_temp/ffmpeg-master-latest-linux64-gpl/bin/ffmpeg ./func-app-dist/tools/
           rm -rf ffmpeg_temp ffmpeg-master-latest-linux64-gpl.tar.xz
 
       - name: "Run Azure Functions Action"
