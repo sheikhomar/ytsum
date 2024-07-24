@@ -3,11 +3,12 @@ from typing import cast
 
 import azure.durable_functions as durable_func
 import azure.functions as func
+from azure.functions.decorators.function_app import FunctionBuilder
 from pydantic import BaseModel
 
 from ytsum.faas.azure.video_download import (
-    DownloadYouTubeVideoOutput,
     YouTubeVideoDownloadProcessor,
+    YouTubeVideoDownloadProcessorResult,
 )
 from ytsum.storage.azure import AzureBlobStorage
 
@@ -16,6 +17,9 @@ blueprint = durable_func.Blueprint()
 
 class ProcessVideoInput(BaseModel):
     video_id: str
+
+    def to_json(self) -> str:
+        return self.model_dump_json()
 
 
 @blueprint.route(route="workflows/process-video/start/{video_id}")
@@ -49,10 +53,12 @@ async def start_workflow(
 
     input = ProcessVideoInput(video_id=video_id)
 
+    func_name = cast(FunctionBuilder, process_video)._function._name
+
     instance_id = await client.start_new(
-        orchestration_function_name=process_video.__name__,
+        orchestration_function_name=func_name,
         instance_id=video_id,
-        client_input=input,
+        client_input=input.model_dump_json(),
     )
     return client.create_check_status_response(request=req, instance_id=instance_id)
 
@@ -85,47 +91,58 @@ async def get_workflow_status(
 
 @blueprint.orchestration_trigger(context_name="context")
 def process_video(context: durable_func.DurableOrchestrationContext):
-    input = cast(ProcessVideoInput, context.get_input())
+    input = ProcessVideoInput.model_validate_json(json_data=context.get_input())
 
-    download_result: DownloadYouTubeVideoOutput = yield context.call_activity(
+    result = yield context.call_activity(
         name="download_youtube_video",
         input_=input.video_id,
     )
+    download_youtube_video_result = (
+        YouTubeVideoDownloadProcessorResult.model_validate_json(json_data=result)
+    )
 
-    if download_result.failed:
-        return [download_result]
+    print(f"Download result: {download_youtube_video_result}")
+
+    if download_youtube_video_result.failed:
+        return [result]
 
     mp4_file_paths = [
         file_path
-        for file_path in download_result.saved_file_paths
+        for file_path in download_youtube_video_result.saved_file_paths
         if file_path.endswith(".mp4")
     ]
+
+    print(f"MP4 file paths: {mp4_file_paths}")
+
     if len(mp4_file_paths) == 1:
-        download_result.error_message = "No MP4 files found after download."
-        return [download_result]
+        download_youtube_video_result.error_message = (
+            "No MP4 files found after download."
+        )
+        return [result]
 
     video_file_path = mp4_file_paths[0]
+
+    print(f"Video file path: {video_file_path}")
+
     extracted_frames = yield context.call_activity(
         name="extract_frames",
         input_=video_file_path,
     )
 
-    return [download_result, extracted_frames]
+    return [result, extracted_frames]
 
 
 @blueprint.activity_trigger(input_name="videoId")
-async def download_youtube_video(videoId: str) -> DownloadYouTubeVideoOutput:
+async def download_youtube_video(videoId: str) -> str:
     azure_storage_conn_str = os.environ.get("AzureWebJobsStorage")
     blob_storage = AzureBlobStorage(
         connection_string=azure_storage_conn_str,
         container_name="youtube-videos",
     )
 
-    processor = YouTubeVideoDownloadProcessor(
-        video_id=videoId, blob_storage=blob_storage
-    )
-    output = await processor.run()
-    return output
+    processor = YouTubeVideoDownloadProcessor(video_id=videoId, storage=blob_storage)
+    result = await processor.run()
+    return result.model_dump_json()
 
 
 @blueprint.activity_trigger(input_name="videoFilePath")

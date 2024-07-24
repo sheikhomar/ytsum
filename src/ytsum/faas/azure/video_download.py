@@ -8,7 +8,7 @@ from ytsum.storage.common import BlobStorage
 from ytsum.youtube import YouTubeVideoDownloader
 
 
-class DownloadYouTubeVideoOutput(BaseModel):
+class YouTubeVideoDownloadProcessorResult(BaseModel):
     video_id: str
     download_result: int = Field(default=0)
     error_message: Optional[str] = Field(default=None)
@@ -29,31 +29,39 @@ class YouTubeVideoDownloadProcessor:
 
         self._storage = storage
 
-    async def run(self) -> DownloadYouTubeVideoOutput:
+    async def run(self) -> YouTubeVideoDownloadProcessorResult:
         await self._storage.start()
 
-        output = DownloadYouTubeVideoOutput(video_id=self._video_id)
+        output = YouTubeVideoDownloadProcessorResult(video_id=self._video_id)
 
-        video_url = f"https://www.youtube.com/watch?v={self.video_id}"
-        with tempfile.TemporaryDirectory() as temp_dir:
-            output_dir = Path(temp_dir)
-            downloader = YouTubeVideoDownloader(url=video_url, output_dir=output_dir)
-            download_result = downloader.run()
+        async for fp in self._storage.list_files(path_prefix=self._video_id):
+            output.saved_file_paths.append(fp)
 
-            if download_result != 0:
-                output.download_result = download_result
-                output.error_message = (
-                    f"Failed to download YouTube files from {video_url}."
+        if len(output.saved_file_paths) == 0:
+            video_url = f"https://www.youtube.com/watch?v={self._video_id}"
+            with tempfile.TemporaryDirectory() as temp_dir:
+                output_dir = Path(temp_dir)
+                downloader = YouTubeVideoDownloader(
+                    url=video_url, output_dir=output_dir
                 )
-                return output
+                download_result = downloader.run()
 
-            files = list(output_dir.glob("*"))
-            if not files:
-                output.error_message = "No files found after download."
-                return output
+                if download_result != 0:
+                    output.download_result = download_result
+                    output.error_message = (
+                        f"Failed to download YouTube files from {video_url}."
+                    )
+                    return output
 
-            uploaded_file_paths = await self._upload_files(files=files)
-            output.saved_file_paths.extend(uploaded_file_paths)
+                files = list(output_dir.glob("*"))
+                if not files:
+                    output.error_message = "No files found after download."
+                    return output
+
+                uploaded_file_paths = await self._upload_files(files=files)
+                output.saved_file_paths.extend(uploaded_file_paths)
+
+        await self._storage.shutdown()
 
         return output
 
