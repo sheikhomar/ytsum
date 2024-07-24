@@ -163,6 +163,7 @@ class FrameContentEnhancer:
         ]
 
         batched_phrases = batched(iterable=all_phrases, n=self._batch_size)
+        n_batches = len(all_phrases) // self._batch_size
 
         last_unfinished_sentence = ""
         last_processed_index = await self._processed_text_repo.get_last_index()
@@ -173,7 +174,7 @@ class FrameContentEnhancer:
                 print(f"Skipping already processed batch {index}.")
                 continue
 
-            print(f"Processing batch {index}/{len(batched_phrases)}.")
+            print(f"Processing batch {index}/{n_batches}.")
 
             # Prepare the original text
             original_text = " ".join([phrase.text for phrase in current_batch])
