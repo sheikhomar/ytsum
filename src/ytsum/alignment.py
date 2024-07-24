@@ -18,7 +18,7 @@ PHRASE_PATTERN = re.compile(r"<(\d{2}:\d{2}:\d{2}\.\d{3})>(?:<c>)?([^<]+)(?:</c>
 def parse_subtitle_line(line: str) -> List[TranscribedPhrase]:
     matches = PHRASE_PATTERN.findall(line)
     return [
-        TranscribedPhrase(text=text, starts_at=start_time)
+        TranscribedPhrase(text=text.strip(), starts_at=start_time)
         for start_time, text in matches
     ]
 
