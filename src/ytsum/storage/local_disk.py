@@ -3,6 +3,7 @@ from typing import Type
 
 import aiofiles
 import aiofiles.os
+import aioshutil
 from pydantic import BaseModel
 from ytsum.storage.common import BlobStorage, ModelType
 
@@ -10,6 +11,12 @@ from ytsum.storage.common import BlobStorage, ModelType
 class LocalDiskBlobStorage(BlobStorage):
     def __init__(self, data_dir: Path) -> None:
         self._data_dir = data_dir
+
+    async def start(self) -> None:
+        print(f"Starting local disk storage at: {self._data_dir}")
+
+    async def shutdown(self) -> None:
+        print(f"Shutting down local disk storage at: {self._data_dir}")
 
     async def load_model(self, path: str, response_model: Type[ModelType]) -> ModelType:
         full_path = self._data_dir / path
@@ -35,3 +42,8 @@ class LocalDiskBlobStorage(BlobStorage):
     async def exists(self, path: str) -> bool:
         full_path = self._data_dir / path
         return await aiofiles.os.path.exists(full_path)
+
+    async def save_file(self, src_file_path: Path, destination_path: str) -> None:
+        dst_file_path = self._data_dir / destination_path
+        await aiofiles.os.makedirs(dst_file_path.parent, exist_ok=True)
+        aioshutil.copyfile(src=src_file_path, dst=dst_file_path)

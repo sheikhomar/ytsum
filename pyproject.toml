@@ -20,6 +20,7 @@ dependencies = [
     "openai>=1.37.0",
     "pydantic-settings>=2.3.4",
     "aiofiles>=24.1.0",
+    "aioshutil>=1.5",
 ]
 requires-python = ">=3.11,<3.12"
 readme = "README.md"
