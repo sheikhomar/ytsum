@@ -41,6 +41,9 @@ class Frame(BaseModel):
         description="Transcribed phrases in the frame.",
     )
 
+    def get_text(self) -> str:
+        return " ".join(phrase.text for phrase in self.phrases)
+
 
 class FrameOutput(BaseModel):
     frames: List[Frame]
@@ -50,7 +53,7 @@ class FrameOutput(BaseModel):
             fh.write(self.model_dump_json(indent=2))
 
     @classmethod
-    def load(cls, input_file: Path) -> None:
+    def load(cls, input_file: Path) -> "FrameOutput":
         with gzip.open(input_file, "rt") as fh:
             json_data = fh.read()
             return cls.model_validate_json(json_data=json_data)
