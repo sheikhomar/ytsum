@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Type
+from typing import AsyncIterator, Type
 
 import aiofiles
 import aiofiles.os
@@ -52,3 +52,9 @@ class AzureBlobStorage(BlobStorage):
         )
         async with aiofiles.open(src_file_path, "rb") as fh:
             await blob_client.upload_blob(data=fh, overwrite=True)
+
+    async def list_files(self, path_prefix: str) -> AsyncIterator[str]:
+        async for blob in self._container_client.list_blobs(
+            name_starts_with=path_prefix
+        ):
+            yield blob.name
