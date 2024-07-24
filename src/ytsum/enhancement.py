@@ -56,9 +56,11 @@ class FrameContentEnhancer:
         last_unfinished_sentence = ""
         last_processed_index = await self._processed_text_repo.get_last_index()
 
+        print(f"Last processed index: {last_processed_index}")
+
         for index, current_batch in enumerate(batched_phrases):
             # Skip already processed batches
-            if index < last_processed_index:
+            if index <= last_processed_index:
                 print(f"Skipping already processed batch {index}.")
                 continue
 
