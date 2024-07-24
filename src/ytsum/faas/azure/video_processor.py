@@ -122,13 +122,13 @@ def process_video(context: durable_func.DurableOrchestrationContext):
         for file_path in download_youtube_video_result.saved_file_paths
         if file_path.endswith(".mp4")
     ]
-    if len(mp4_file_paths) == 1:
+    if len(mp4_file_paths) != 1:
         return ProcessVideoOutput(
             video_id=input.video_id,
             stage="mp4_file_check",
             error_message=(
                 "No MP4 files found after download. "
-                f"Expected one but found {len(mp4_file_paths)}."
+                f"Expected exactly 1 but found {len(mp4_file_paths)}."
             ),
         ).model_dump()
 
