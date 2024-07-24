@@ -1,5 +1,5 @@
 import os
-from typing import cast
+from typing import Dict, cast
 
 import azure.durable_functions as durable_func
 import azure.functions as func
@@ -58,7 +58,7 @@ async def start_workflow(
     instance_id = await client.start_new(
         orchestration_function_name=func_name,
         instance_id=video_id,
-        client_input=input.model_dump_json(),
+        client_input=input.model_dump(),
     )
     return client.create_check_status_response(request=req, instance_id=instance_id)
 
@@ -91,20 +91,20 @@ async def get_workflow_status(
 
 @blueprint.orchestration_trigger(context_name="context")
 def process_video(context: durable_func.DurableOrchestrationContext):
-    input = ProcessVideoInput.model_validate_json(json_data=context.get_input())
+    input = ProcessVideoInput.model_validate(obj=context.get_input())
 
-    result = yield context.call_activity(
+    result_obj = yield context.call_activity(
         name="download_youtube_video",
         input_=input.video_id,
     )
-    download_youtube_video_result = (
-        YouTubeVideoDownloadProcessorResult.model_validate_json(json_data=result)
+    download_youtube_video_result = YouTubeVideoDownloadProcessorResult.model_validate(
+        obj=result_obj
     )
 
     print(f"Download result: {download_youtube_video_result}")
 
     if download_youtube_video_result.failed:
-        return [result]
+        return [result_obj]
 
     mp4_file_paths = [
         file_path
@@ -118,7 +118,7 @@ def process_video(context: durable_func.DurableOrchestrationContext):
         download_youtube_video_result.error_message = (
             "No MP4 files found after download."
         )
-        return [result]
+        return [result_obj]
 
     video_file_path = mp4_file_paths[0]
 
@@ -129,11 +129,11 @@ def process_video(context: durable_func.DurableOrchestrationContext):
         input_=video_file_path,
     )
 
-    return [result, extracted_frames]
+    return [result_obj, extracted_frames]
 
 
 @blueprint.activity_trigger(input_name="videoId")
-async def download_youtube_video(videoId: str) -> str:
+async def download_youtube_video(videoId: str) -> Dict[str, object]:
     azure_storage_conn_str = os.environ.get("AzureWebJobsStorage")
     blob_storage = AzureBlobStorage(
         connection_string=azure_storage_conn_str,
@@ -142,7 +142,7 @@ async def download_youtube_video(videoId: str) -> str:
 
     processor = YouTubeVideoDownloadProcessor(video_id=videoId, storage=blob_storage)
     result = await processor.run()
-    return result.model_dump_json()
+    return result.model_dump()
 
 
 @blueprint.activity_trigger(input_name="videoFilePath")
