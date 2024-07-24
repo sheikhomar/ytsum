@@ -6,8 +6,8 @@ class Settings(BaseSettings):
     """Application settings."""
 
     OPEN_AI_API_KEY: str = Field(env="OPEN_AI_API_KEY")
-    WEAK_MODEL_NAME: str = Field(env="WEAK_MODEL_NAME")
-    STRONG_MODEL_NAME: str = Field(env="STRONG_MODEL_NAME")
+    OPEN_AI_WEAK_MODEL_NAME: str = Field(env="OPEN_AI_WEAK_MODEL_NAME")
+    OPEN_AI_STRONG_MODEL_NAME: str = Field(env="OPEN_AI_STRONG_MODEL_NAME")
 
     class Config:
         env_file = ".env"

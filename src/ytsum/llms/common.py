@@ -1,10 +1,8 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum
-from typing import AsyncGenerator, Optional, Sequence, Type, TypeVar
+from typing import AsyncGenerator, Optional, Sequence
 
 from pydantic import BaseModel, Field
-
-T = TypeVar("T")
 
 
 class MessageRole(StrEnum):
@@ -68,26 +66,6 @@ class LLM(ABC):
             The response text returned by the LLM.
         """
 
-        raise NotImplementedError
-
-    @abstractmethod
-    async def structured_completion(
-        self,
-        messages: Sequence[ChatMessage],
-        response_model: Type[T],
-        temperature: Optional[float] = None,
-    ) -> T:
-        """
-        Sends a sequences of messages to the LLM and returns a structured data.
-
-        Args:
-            messages: A sequence of chat messages.
-            response_model: The type of the response model to use.
-            temperature: The temperature to use when generating the response. Defaults to None.
-
-        Returns:
-            The structured completion returned by the LLM.
-        """
         raise NotImplementedError
 
     @abstractmethod
