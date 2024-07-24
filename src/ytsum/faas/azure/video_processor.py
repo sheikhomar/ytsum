@@ -1,10 +1,10 @@
 import os
-from typing import Dict, cast
+from typing import Dict, Optional, cast
 
 import azure.durable_functions as durable_func
 import azure.functions as func
 from azure.functions.decorators.function_app import FunctionBuilder
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ytsum.faas.azure.video_download import (
     YouTubeVideoDownloadProcessor,
@@ -18,8 +18,11 @@ blueprint = durable_func.Blueprint()
 class ProcessVideoInput(BaseModel):
     video_id: str
 
-    def to_json(self) -> str:
-        return self.model_dump_json()
+
+class ProcessVideoOutput(BaseModel):
+    video_id: str
+    stage: str = Field(..., description="Which stage the workflow is currently at")
+    error_message: Optional[str] = Field(default=None)
 
 
 @blueprint.route(route="workflows/process-video/start/{video_id}")
@@ -91,8 +94,10 @@ async def get_workflow_status(
 
 @blueprint.orchestration_trigger(context_name="context")
 def process_video(context: durable_func.DurableOrchestrationContext):
+    # Step 1: Parse the input and validate it
     input = ProcessVideoInput.model_validate(obj=context.get_input())
 
+    # Step 2: Call the `download_youtube_video`` activity function
     result_obj = yield context.call_activity(
         name="download_youtube_video",
         input_=input.video_id,
@@ -100,36 +105,45 @@ def process_video(context: durable_func.DurableOrchestrationContext):
     download_youtube_video_result = YouTubeVideoDownloadProcessorResult.model_validate(
         obj=result_obj
     )
-
     print(f"Download result: {download_youtube_video_result}")
 
+    # Step 3: Check if the download was successful
     if download_youtube_video_result.failed:
-        return [result_obj]
+        err_msg = download_youtube_video_result.error_message
+        return ProcessVideoOutput(
+            video_id=input.video_id,
+            stage="download_youtube_video",
+            error_message=f"Failed to download YouTube video: {err_msg}",
+        ).model_dump()
 
+    # Step 4: Check if any MP4 files were downloaded
     mp4_file_paths = [
         file_path
         for file_path in download_youtube_video_result.saved_file_paths
         if file_path.endswith(".mp4")
     ]
-
-    print(f"MP4 file paths: {mp4_file_paths}")
-
     if len(mp4_file_paths) == 1:
-        download_youtube_video_result.error_message = (
-            "No MP4 files found after download."
-        )
-        return [result_obj]
+        return ProcessVideoOutput(
+            video_id=input.video_id,
+            stage="mp4_file_check",
+            error_message=(
+                "No MP4 files found after download. "
+                f"Expected one but found {len(mp4_file_paths)}."
+            ),
+        ).model_dump()
 
-    video_file_path = mp4_file_paths[0]
-
-    print(f"Video file path: {video_file_path}")
-
+    # Step 5: Call the `extract_frames` activity function
     extracted_frames = yield context.call_activity(
         name="extract_frames",
-        input_=video_file_path,
+        input_=mp4_file_paths[0],
     )
+    print(f"Extracted frames: {extracted_frames}")
 
-    return [result_obj, extracted_frames]
+    # Final step: Return the completed status
+    return ProcessVideoOutput(
+        video_id=input.video_id,
+        stage="completed",
+    ).model_dump()
 
 
 @blueprint.activity_trigger(input_name="videoId")
@@ -147,4 +161,5 @@ async def download_youtube_video(videoId: str) -> Dict[str, object]:
 
 @blueprint.activity_trigger(input_name="videoFilePath")
 async def extract_frames(videoFilePath: str) -> str:
+    print(f"Extracting frames from video file: {videoFilePath}")
     return videoFilePath
