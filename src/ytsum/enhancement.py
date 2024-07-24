@@ -1,127 +1,15 @@
-from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import List, Set, Type, TypeVar
+from typing import List
 
-import aiofiles
-import aiofiles.os
 import anyio
-from pydantic import BaseModel, Field
 
 from ytsum.config import Settings, init_settings
 from ytsum.llms.common import LLM, ChatMessage, MessageRole
 from ytsum.llms.openai import OpenAILLM
 from ytsum.models import Frame, FrameOutput, TranscribedPhrase
+from ytsum.storage.local_disk import LocalDiskBlobStorage
+from ytsum.storage.repositories import ProcessedText, ProcessedTextRepository
 from ytsum.utils import batched
-
-T = TypeVar("T", bound=BaseModel)
-
-
-class BlobStorage(ABC):
-    @abstractmethod
-    async def load_model(self, path: str, response_model: Type[T]) -> T:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def save_model(self, path: str, model: BaseModel) -> None:
-        raise NotImplementedError
-
-    @abstractmethod
-    async def exists(self, path: str) -> bool:
-        raise NotImplementedError
-
-
-class LocalDiskBlobStorage(BlobStorage):
-    def __init__(self, data_dir: Path) -> None:
-        self._data_dir = data_dir
-
-    async def load_model(self, path: str, response_model: Type[T]) -> T:
-        full_path = self._data_dir / path
-
-        exists = await aiofiles.os.path.exists(full_path)
-        if not exists:
-            raise FileNotFoundError(f"File not found: {full_path}")
-
-        async with aiofiles.open(full_path, mode="r") as f:
-            json_data = await f.read()
-            model = response_model.model_validate_json(json_data=json_data)
-            return model
-
-    async def save_model(self, path: str, model: BaseModel) -> None:
-        full_path = self._data_dir / path
-
-        await aiofiles.os.makedirs(full_path.parent, exist_ok=True)
-
-        async with aiofiles.open(full_path, mode="w") as f:
-            json_data = model.model_dump_json(indent=2)
-            await f.write(json_data)
-
-    async def exists(self, path: str) -> bool:
-        full_path = self._data_dir / path
-        return await aiofiles.os.path.exists(full_path)
-
-
-class ProcessedText(BaseModel):
-    index: int = Field(...)
-    text: str = Field(..., description="The processed text.")
-    original_text: str = Field(..., description="The original text.")
-
-
-class ProcessedTextMetadata(BaseModel):
-    count: int = Field(default=0, description="The number of processed texts.")
-    indices: Set[int] = Field(default_factory=set)
-
-
-class ProcessedTextRepository:
-    def __init__(self, path_prefix: str, blob_storage: BlobStorage) -> None:
-        self._path_prefix = path_prefix
-        self._processed_texts: List[ProcessedText] = []
-        self._metadata: ProcessedTextMetadata = ProcessedTextMetadata()
-        self._blob_storage = blob_storage
-
-    async def load(self) -> None:
-        meta_data_path = f"{self._path_prefix}/meta-data.json"
-        meta_data_exists = await self._blob_storage.exists(path=meta_data_path)
-
-        # Create the metadata file if it doesn't exist
-        if not meta_data_exists:
-            await self._save_metadata()
-            return
-
-        # Otherwise, load the metadata and processed texts
-        self._metadata = await self._blob_storage.load_model(
-            path=f"{self._path_prefix}/meta-data.json",
-            response_model=ProcessedTextMetadata,
-        )
-
-        for index in self._metadata.indices:
-            processed_text = await self._blob_storage.load_model(
-                path=f"{self._path_prefix}/data/{index}.json",
-                response_model=ProcessedText,
-            )
-            self._processed_texts.append(processed_text)
-
-    async def add(self, processed_text: ProcessedText) -> None:
-        # Save the new ProcessedText object
-        await self._blob_storage.save_model(
-            path=f"{self._path_prefix}/data/{processed_text.index}.json",
-            model=processed_text,
-        )
-
-        # Then finally do some bookkeeping
-        self._metadata.count += 1
-        self._metadata.indices.add(processed_text.index)
-        await self._save_metadata()
-
-        self._processed_texts.append(processed_text)
-
-    async def get_last_index(self) -> int:
-        return max(self._metadata.indices) if self._metadata.indices else 0
-
-    async def _save_metadata(self) -> None:
-        await self._blob_storage.save_model(
-            path=f"{self._path_prefix}/meta-data.json",
-            model=self._metadata,
-        )
 
 
 class FrameContentEnhancer:
@@ -226,11 +114,10 @@ Follow these guidelines when adding punctuation:
 2. Use commas (,) to separate clauses and items in a list.
 3. Add question marks (?) at the end of questions.
 4. Use exclamation points (!) for exclamations or emphasis, but use them sparingly.
-5. Add quotation marks (" ") around direct speech or quotes.
-6. Use ellipsis (...) to indicate trailing off or pauses in speech.
-7. Add hyphens (-) for compound words or to indicate stammering/repetition.
-8. Use parentheses ( ) for asides or additional information.
-9. Capitalize the first letter of sentences and proper nouns.
+5. Use ellipsis (...) to indicate trailing off or pauses in speech.
+6. Add hyphens (-) for compound words or to indicate stammering/repetition.
+7. Use parentheses ( ) for asides or additional information.
+8. Capitalize the first letter of sentences and proper nouns.
 
 When determining sentence endings, consider the context and natural pauses in speech. If you're unsure about where a sentence ends, it's often better to use a comma or ellipsis rather than a period.
 
