@@ -18,7 +18,8 @@ class AzureBlobStorage(BlobStorage):
         )
 
     async def start(self) -> None:
-        if not self._container_client.exists():
+        container_exists = await self._container_client.exists()
+        if not container_exists:
             await self._container_client.create_container()
 
     async def shutdown(self) -> None:
