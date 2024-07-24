@@ -21,6 +21,7 @@ dependencies = [
     "pydantic-settings>=2.3.4",
     "aiofiles>=24.1.0",
     "aioshutil>=1.5",
+    "azure-functions-durable>=1.2.9",
 ]
 requires-python = ">=3.11,<3.12"
 readme = "README.md"

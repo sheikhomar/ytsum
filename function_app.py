@@ -6,9 +6,11 @@ from typing import List
 import azure.functions as func
 from azure.storage.blob import BlobServiceClient
 from ytsum import say_hello
+from ytsum.faas.azure.video_processor import blueprint as video_processor_blueprint
 from ytsum.youtube import YouTubeVideoDownloader
 
-app = func.FunctionApp()
+app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+app.register_functions(video_processor_blueprint)
 
 
 def upload_files_in_dir_to_blob_container(
