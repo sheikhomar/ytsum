@@ -1,3 +1,4 @@
+import os
 import tempfile
 from pathlib import Path
 from typing import List
@@ -10,27 +11,12 @@ from ytsum.youtube import YouTubeVideoDownloader
 app = func.FunctionApp()
 
 
-def get_blob_connection_string() -> str:
-    """
-    Retrieve the blob storage connection string from environment variables.
-
-    :return: The connection string for blob storage.
-    """
-    import os
-
-    connection_string = os.environ.get("AzureWebJobsStorage")
-    if not connection_string:
-        raise ValueError(
-            "Blob storage connection string not found in environment variables."
-        )
-    return connection_string
-
-
 def upload_files_in_dir_to_blob_container(
-    file_paths: List[Path], prefix: str, container_name: str = "youtube-videos"
+    file_paths: List[Path], connection_string: str, prefix: str, container_name: str
 ) -> List[str]:
-    connection_string = get_blob_connection_string()
-    blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+    blob_service_client = BlobServiceClient.from_connection_string(
+        conn_str=connection_string
+    )
     container_client = blob_service_client.get_container_client(
         container=container_name
     )
@@ -69,6 +55,12 @@ def download(req: func.HttpRequest) -> func.HttpResponse:
         An HTTP response indicating the result of the operation.
     """
 
+    azure_storage_conn_str = os.environ.get("AzureWebJobsStorage")
+    if not azure_storage_conn_str:
+        return func.HttpResponse(
+            "Connection string to Azure Storage Account not found", status_code=500
+        )
+
     video_id = req.route_params.get("video_id")
     if not video_id or len(video_id.strip()) < 5:
         return func.HttpResponse(
@@ -95,6 +87,7 @@ def download(req: func.HttpRequest) -> func.HttpResponse:
 
         uploaded_files = upload_files_in_dir_to_blob_container(
             file_paths=files,
+            connection_string=azure_storage_conn_str,
             prefix=video_id,
             container_name="youtube-videos",
         )
