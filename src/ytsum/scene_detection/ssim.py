@@ -83,12 +83,13 @@ class StructuralSimilaritySceneDetector(SceneDetector):
                     prev_frame = frame
                     continue
 
-                # score = self._compute_ssim(img1=prev_frame, img2=frame)
+                if (frame_count - scene_start_frame) < min_scene_length_frames:
+                    prev_frame = frame
+                    continue
+
                 score = structural_similarity(im1=prev_frame, im2=frame)
 
-                if (score < self._threshold) and (
-                    (frame_count - scene_start_frame) >= min_scene_length_frames
-                ):
+                if score < self._threshold:
                     frame_time_ms = video.get(cv2.CAP_PROP_POS_MSEC)
                     scenes.append(
                         SceneInfo(
