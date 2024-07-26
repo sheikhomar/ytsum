@@ -42,6 +42,17 @@ class VideoImageExtractor:
 
         self._output_dir.mkdir(parents=True, exist_ok=True)
 
+        print(
+            (
+                f"Initialized VideoImageExtractor:\n"
+                f"  Video path: {self._video_path}\n"
+                f"  Output directory: {self._output_dir}\n"
+                f"  Threshold: {self._threshold}\n"
+                f"  Image format: {self._image_format}\n"
+                f"  Sample interval: {self._sample_interval_secs} seconds"
+            )
+        )
+
     def run(self) -> None:
         """Process the video and extract significant frames.
 

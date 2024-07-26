@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Type
+from typing import AsyncIterator, Type
 
 import aiofiles
 import aiofiles.os
@@ -18,7 +18,8 @@ class AzureBlobStorage(BlobStorage):
         )
 
     async def start(self) -> None:
-        if not self._container_client.exists():
+        container_exists = await self._container_client.exists()
+        if not container_exists:
             await self._container_client.create_container()
 
     async def shutdown(self) -> None:
@@ -52,3 +53,19 @@ class AzureBlobStorage(BlobStorage):
         )
         async with aiofiles.open(src_file_path, "rb") as fh:
             await blob_client.upload_blob(data=fh, overwrite=True)
+
+    async def list_files(self, path_prefix: str) -> AsyncIterator[str]:
+        async for blob in self._container_client.list_blobs(
+            name_starts_with=path_prefix
+        ):
+            yield blob.name
+
+    async def download_file(self, src_file_path: str, destination_path: Path) -> None:
+        blob_client: BlobClient = self._container_client.get_blob_client(
+            blob=src_file_path
+        )
+        await aiofiles.os.makedirs(destination_path.parent, exist_ok=True)
+        async with aiofiles.open(destination_path, "wb") as fh:
+            downloader = await blob_client.download_blob()
+            data = await downloader.readall()
+            await fh.write(data)

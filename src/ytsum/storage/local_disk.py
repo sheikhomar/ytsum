@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Type
+from typing import AsyncIterator, Type
 
 import aiofiles
 import aiofiles.os
@@ -47,3 +47,15 @@ class LocalDiskBlobStorage(BlobStorage):
         dst_file_path = self._data_dir / destination_path
         await aiofiles.os.makedirs(dst_file_path.parent, exist_ok=True)
         aioshutil.copyfile(src=src_file_path, dst=dst_file_path)
+
+    async def list_files(self, path_prefix: str) -> AsyncIterator[str]:
+        async for file_path in aiofiles.os.scandir(self._data_dir):
+            if file_path.is_file():
+                raw_path = file_path.path.replace(str(self._data_dir), "")
+                if raw_path.startswith(path_prefix):
+                    yield raw_path
+
+    async def download_file(self, src_file_path: str, destination_path: Path) -> None:
+        src_path = self._data_dir / src_file_path
+        await aiofiles.os.makedirs(destination_path.parent, exist_ok=True)
+        aioshutil.copyfile(src=src_path, dst=destination_path)

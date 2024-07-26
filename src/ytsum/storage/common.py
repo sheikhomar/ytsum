@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Type, TypeVar
+from typing import AsyncIterator, Type, TypeVar
 
 from pydantic import BaseModel
 
@@ -32,5 +32,23 @@ class BlobStorage(ABC):
     async def save_file(self, src_file_path: Path, destination_path: str) -> None:
         """
         Save a local file to the storage system.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def list_files(self, path_prefix: str) -> AsyncIterator[str]:
+        """
+        Fetch a list of files in the storage system with the given path prefix.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def download_file(self, src_file_path: str, destination_path: Path) -> None:
+        """
+        Download a file from the storage system to the local file system.
+
+        Args:
+            src_file_path: The path to the file in the storage system.
+            destination_path: The path to save the file to on the local file
         """
         raise NotImplementedError
