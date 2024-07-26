@@ -18,6 +18,10 @@ class SceneDetectionResult(BaseModel):
     scene_count: int
     frame_rate_secs: float
 
+    detector_name: str = Field(
+        default="adaptive", description="The name of the scene detector."
+    )
+
     min_scene_length_secs: int = Field(
         default=2, description="The minimum scene length in seconds."
     )
@@ -28,10 +32,10 @@ class SceneDetectionResult(BaseModel):
     adaptive_threshold: float = Field(
         description="The adaptive threshold used for scene detection."
     )
-    scenes: List[SceneInfo] = Field(default_factory=list)
     min_content_val: int = Field(
         description="The minimum content value used for scene detection."
     )
+    scenes: List[SceneInfo] = Field(default_factory=list)
     processing_time_human: str = Field(
         description="The time taken to process the video in human-readable format."
     )
