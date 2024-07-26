@@ -3,6 +3,7 @@ from time import time
 from typing import List, Optional
 
 import cv2
+import numpy as np
 from numpy.typing import NDArray
 from skimage.metrics import structural_similarity
 from tqdm import tqdm
@@ -74,24 +75,32 @@ class StructuralSimilaritySceneDetector(SceneDetector):
                 break
 
             frame_count += 1
-            frame_time_ms = video.get(cv2.CAP_PROP_POS_MSEC)
 
             if frame_count % frame_interval == 0:
-                if prev_frame is None or self._images_differ(
-                    img1=prev_frame, img2=frame
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+                if prev_frame is None:
+                    prev_frame = frame
+                    continue
+
+                # score = self._compute_ssim(img1=prev_frame, img2=frame)
+                score = structural_similarity(im1=prev_frame, im2=frame)
+
+                if (score < self._threshold) and (
+                    (frame_count - scene_start_frame) >= min_scene_length_frames
                 ):
-                    if frame_count - scene_start_frame >= min_scene_length_frames:
-                        scenes.append(
-                            SceneInfo(
-                                index=len(scenes),
-                                start_time=self._format_time(scene_start_time),
-                                end_time=self._format_time(frame_time_ms),
-                                start_frame=scene_start_frame,
-                                end_frame=frame_count,
-                            )
+                    frame_time_ms = video.get(cv2.CAP_PROP_POS_MSEC)
+                    scenes.append(
+                        SceneInfo(
+                            index=len(scenes),
+                            start_time=self._format_time(scene_start_time),
+                            end_time=self._format_time(frame_time_ms),
+                            start_frame=scene_start_frame,
+                            end_frame=frame_count,
                         )
-                        scene_start_frame = frame_count
-                        scene_start_time = frame_time_ms
+                    )
+                    scene_start_frame = frame_count
+                    scene_start_time = frame_time_ms
 
                 prev_frame = frame
 
@@ -104,6 +113,29 @@ class StructuralSimilaritySceneDetector(SceneDetector):
         video.release()
 
         return scenes
+
+    def _compute_ssim(self, img1: NDArray, img2: NDArray) -> float:
+        C1 = (0.01 * 255) ** 2
+        C2 = (0.03 * 255) ** 2
+
+        img1 = img1.astype(np.float64)
+        img2 = img2.astype(np.float64)
+        kernel = cv2.getGaussianKernel(11, 1.5)
+        window = np.outer(kernel, kernel.transpose())
+
+        mu1 = cv2.filter2D(img1, -1, window)[5:-5, 5:-5]
+        mu2 = cv2.filter2D(img2, -1, window)[5:-5, 5:-5]
+        mu1_sq = mu1**2
+        mu2_sq = mu2**2
+        mu1_mu2 = mu1 * mu2
+        sigma1_sq = cv2.filter2D(img1**2, -1, window)[5:-5, 5:-5] - mu1_sq
+        sigma2_sq = cv2.filter2D(img2**2, -1, window)[5:-5, 5:-5] - mu2_sq
+        sigma12 = cv2.filter2D(img1 * img2, -1, window)[5:-5, 5:-5] - mu1_mu2
+
+        ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / (
+            (mu1_sq + mu2_sq + C1) * (sigma1_sq + sigma2_sq + C2)
+        )
+        return float(ssim_map.mean())
 
     def _images_differ(self, img1: NDArray, img2: NDArray) -> bool:
         """
