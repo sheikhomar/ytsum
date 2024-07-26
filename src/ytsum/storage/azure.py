@@ -64,6 +64,7 @@ class AzureBlobStorage(BlobStorage):
         blob_client: BlobClient = self._container_client.get_blob_client(
             blob=src_file_path
         )
+        await aiofiles.os.makedirs(destination_path.parent, exist_ok=True)
         async with aiofiles.open(destination_path, "wb") as fh:
             downloader = await blob_client.download_blob()
             data = await downloader.readall()
