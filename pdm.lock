@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:f3ca24a3bd3f943e5e8e23ca0b553cbbcf67629b0f2b6194ef35c3fd690eb149"
+content_hash = "sha256:15e8d5af17e881f5b0fd051d20262499897a96354d072b3e8c67faaa95ab92cb"
 
 [[metadata.targets]]
 requires_python = ">=3.11,<3.12"
@@ -308,7 +308,7 @@ name = "click"
 version = "8.1.7"
 requires_python = ">=3.7"
 summary = "Composable command line interface toolkit"
-groups = ["dev"]
+groups = ["default", "dev"]
 dependencies = [
     "colorama; platform_system == \"Windows\"",
     "importlib-metadata; python_version < \"3.8\"",
@@ -826,7 +826,7 @@ name = "platformdirs"
 version = "4.2.2"
 requires_python = ">=3.8"
 summary = "A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`."
-groups = ["dev"]
+groups = ["default", "dev"]
 files = [
     {file = "platformdirs-4.2.2-py3-none-any.whl", hash = "sha256:2d7a1657e36a80ea911db832a8a6ece5ee53d8de21edd5cc5879af6530b1bfee"},
     {file = "platformdirs-4.2.2.tar.gz", hash = "sha256:38b7b51f512eed9e84a22788b4bce1de17c0adb134d6becb09836e37d8654cd3"},
@@ -1100,6 +1100,23 @@ dependencies = [
 files = [
     {file = "requests-2.32.3-py3-none-any.whl", hash = "sha256:70761cfe03c773ceb22aa2f671b4757976145175cdfca038c02654d061d6dcc6"},
     {file = "requests-2.32.3.tar.gz", hash = "sha256:55365417734eb18255590a9ff9eb97e9e1da868d4ccd6402399eaf68af20a760"},
+]
+
+[[package]]
+name = "scenedetect"
+version = "0.6.4"
+requires_python = ">=3.7"
+summary = "Video scene cut/shot detection program and Python library."
+groups = ["default"]
+dependencies = [
+    "Click",
+    "numpy",
+    "platformdirs",
+    "tqdm",
+]
+files = [
+    {file = "scenedetect-0.6.4-py3-none-any.whl", hash = "sha256:df72648ea9307defbbdb60fc70e720cb683de215c1167558e961ba63b3b6a621"},
+    {file = "scenedetect-0.6.4.tar.gz", hash = "sha256:db281e56cd3f15e520b553d73a5dbb845e7d613a7f4fb94f3078f9af43dd14e0"},
 ]
 
 [[package]]
