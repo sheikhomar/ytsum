@@ -6,6 +6,7 @@ import azure.functions as func
 from azure.functions.decorators.function_app import FunctionBuilder
 from pydantic import BaseModel, Field
 
+from ytsum.faas.azure.helpers.frame_extraction import VideoFrameExtractor
 from ytsum.faas.azure.video_download import (
     YouTubeVideoDownloadProcessor,
     YouTubeVideoDownloadProcessorResult,
@@ -23,6 +24,11 @@ class ProcessVideoOutput(BaseModel):
     video_id: str
     stage: str = Field(..., description="Which stage the workflow is currently at")
     error_message: Optional[str] = Field(default=None)
+
+
+class ExtractFramesInput(BaseModel):
+    video_id: str
+    video_file_path: str
 
 
 @blueprint.route(route="workflows/process-video/start/{video_id}")
@@ -135,7 +141,10 @@ def process_video(context: durable_func.DurableOrchestrationContext):
     # Step 5: Call the `extract_frames` activity function
     extracted_frames = yield context.call_activity(
         name="extract_frames",
-        input_=mp4_file_paths[0],
+        input_=ExtractFramesInput(
+            video_id=input.video_id,
+            video_file_path=mp4_file_paths[0],
+        ).model_dump(),
     )
     print(f"Extracted frames: {extracted_frames}")
 
@@ -159,7 +168,27 @@ async def download_youtube_video(videoId: str) -> Dict[str, object]:
     return result.model_dump()
 
 
-@blueprint.activity_trigger(input_name="videoFilePath")
-async def extract_frames(videoFilePath: str) -> str:
-    print(f"Extracting frames from video file: {videoFilePath}")
-    return videoFilePath
+@blueprint.activity_trigger(input_name="inputDict")
+async def extract_frames(inputDict: Dict[str, object]) -> Dict[str, object]:
+    input = ExtractFramesInput.model_validate(obj=inputDict)
+
+    azure_storage_conn_str = os.environ.get("AzureWebJobsStorage")
+    videos_store = AzureBlobStorage(
+        connection_string=azure_storage_conn_str,
+        container_name="youtube-videos",
+    )
+
+    output_store = AzureBlobStorage(
+        connection_string=azure_storage_conn_str,
+        container_name="extracted-frames",
+    )
+
+    processor = VideoFrameExtractor(
+        video_id=input.video_id,
+        video_file_path=input.video_file_path,
+        input_storage=videos_store,
+        output_storage=output_store,
+    )
+    result = await processor.run()
+
+    return result.model_dump()
