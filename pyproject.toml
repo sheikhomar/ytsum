@@ -23,6 +23,7 @@ dependencies = [
     "aioshutil>=1.5",
     "azure-functions-durable>=1.2.9",
     "scenedetect>=0.6.4",
+    "seaborn>=0.13.2",
 ]
 requires-python = ">=3.11,<3.12"
 readme = "README.md"

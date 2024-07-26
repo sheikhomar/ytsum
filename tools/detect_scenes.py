@@ -1,5 +1,8 @@
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 from ytsum.scene_detection.adaptive import AdaptiveSceneDetector
 from ytsum.scene_detection.common import SceneDetectionResult
 from ytsum.scene_detection.eval import SceneDetectionEvaluator, VideoSceneAnnotation
@@ -53,10 +56,32 @@ def run_and_evaluate_adaptive_detector(
         print(evaluation_result.model_dump_json(indent=2))
 
 
+def generate_plot(df_data: pd.DataFrame, output_path: Path) -> None:
+    print(df_data)
+
+    pivot_table = pd.pivot_table(
+        df_data,
+        values="recall",
+        index="adaptive_threshold",
+        columns="min_content_value",
+    )
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sns.heatmap(pivot_table, annot=True, fmt=".2f", cmap="viridis", ax=ax)
+    ax.set_title("Recall Heatmap based on Adaptive Threshold and Min Content Value")
+    ax.set_xlabel("Min Content Value")
+    ax.set_ylabel("Adaptive Threshold")
+    fig.savefig(output_path)
+    print(f"Saved plot to {output_path}")
+
+
 def run_eval_only(video_dir: Path) -> None:
     annotation_file_path = video_dir / "scene-annotation.json"
     if annotation_file_path.exists():
         result_file_paths = video_dir.glob("scene-detection-result-*.json")
+
+        raw_data = []
+
         for result_file_path in result_file_paths:
             result = SceneDetectionResult.model_validate_json(
                 json_data=result_file_path.read_text()
@@ -73,12 +98,28 @@ def run_eval_only(video_dir: Path) -> None:
 
             print(evaluation_result.model_dump_json(indent=2))
 
+            raw_data.append(
+                {
+                    "adaptive_threshold": result.adaptive_threshold,
+                    "min_scene_length_secs": result.min_scene_length_secs,
+                    "min_content_value": result.min_content_val,
+                    "accuracy": evaluation_result.accuracy,
+                    "precision": evaluation_result.precision,
+                    "recall": evaluation_result.recall,
+                    "f1_score": evaluation_result.f1_score,
+                }
+            )
+
+        df_data = pd.DataFrame(raw_data)
+        generate_plot(df_data, video_dir / "results.png")
+
 
 def main() -> None:
     video_dir = Path("data/downloads")
     video_ids = ["Onf1UqKPMR4", "MBdEWLqfdms", "4gcGkFAG7OA"]
 
     run_eval_only(video_dir=video_dir / "4gcGkFAG7OA")
+    return
 
     for content_val in [1, 3, 5, 7, 9, 10]:
         for threshold in [0.5, 1.0, 2.0, 2.5, 3.0, 3.5]:
