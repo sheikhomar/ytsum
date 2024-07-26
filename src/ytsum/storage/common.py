@@ -41,3 +41,14 @@ class BlobStorage(ABC):
         Fetch a list of files in the storage system with the given path prefix.
         """
         raise NotImplementedError
+
+    @abstractmethod
+    def download_file(self, src_file_path: str, destination_path: Path) -> None:
+        """
+        Download a file from the storage system to the local file system.
+
+        Args:
+            src_file_path: The path to the file in the storage system.
+            destination_path: The path to save the file to on the local file
+        """
+        raise NotImplementedError

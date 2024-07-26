@@ -59,3 +59,12 @@ class AzureBlobStorage(BlobStorage):
             name_starts_with=path_prefix
         ):
             yield blob.name
+
+    async def download_file(self, src_file_path: str, destination_path: Path) -> None:
+        blob_client: BlobClient = self._container_client.get_blob_client(
+            blob=src_file_path
+        )
+        async with aiofiles.open(destination_path, "wb") as fh:
+            downloader = await blob_client.download_blob()
+            data = await downloader.readall()
+            await fh.write(data)

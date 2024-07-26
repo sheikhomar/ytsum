@@ -54,3 +54,8 @@ class LocalDiskBlobStorage(BlobStorage):
                 raw_path = file_path.path.replace(str(self._data_dir), "")
                 if raw_path.startswith(path_prefix):
                     yield raw_path
+
+    async def download_file(self, src_file_path: str, destination_path: Path) -> None:
+        src_path = self._data_dir / src_file_path
+        await aiofiles.os.makedirs(destination_path.parent, exist_ok=True)
+        aioshutil.copyfile(src=src_path, dst=destination_path)
