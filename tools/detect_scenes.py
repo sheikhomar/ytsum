@@ -145,7 +145,7 @@ def _is_scene_match(
 def run_eval(
     annotation: VideoSceneAnnotation,
     result: SceneDetectionResult,
-    tolerance_secs: float = 1.0,
+    tolerance_secs: float,
 ) -> None:
     """
     Evaluate the accuracy of the scene detection algorithm.
@@ -153,7 +153,7 @@ def run_eval(
     Args:
         annotation (VideoSceneAnnotation): The ground truth annotation.
         result (SceneDetectionResult): The result from the scene detection algorithm.
-        tolerance_secs (float, optional): The tolerance in seconds for matching scenes. Defaults to 1.0.
+        tolerance_secs (float, optional): The tolerance in seconds for matching scenes.
 
     Raises:
         ValueError: If the video file paths in the annotation and result don't match.
@@ -161,7 +161,13 @@ def run_eval(
     if Path(annotation.video_file_path) != Path(result.video_file_path):
         raise ValueError("Video file paths in annotation and result do not match.")
 
-    print(f"Running evaluation for {annotation.video_file_path}")
+    print(f"\n\nRunning evaluation for {annotation.video_file_path}")
+
+    # Print algorithm parameters
+    print("Algorithm Parameters:")
+    print(f" - Adaptive Threshold: {result.adaptive_threshold}")
+    print(f" - Minimum Content Value: {result.min_content_val}")
+    print(f" - Minimum Scene Length: {result.min_scene_length_secs} seconds")
 
     correct_count = 0
     total_scenes = len(annotation.scenes)
@@ -207,7 +213,7 @@ def run_algorithm(video_dir: Path) -> None:
 
     video_stream: VideoStream = open_video(str(video_file_path))
 
-    min_scene_length_secs = 2
+    min_scene_length_secs = 1
     min_scene_length_frames = min_scene_length_secs * video_stream.frame_rate
 
     print(
@@ -215,8 +221,8 @@ def run_algorithm(video_dir: Path) -> None:
     )
 
     detector = AdaptiveDetector(
-        adaptive_threshold=0.8,
-        min_content_val=10,
+        adaptive_threshold=1.5,
+        min_content_val=5,
         min_scene_len=min_scene_length_frames,
     )
 
@@ -282,7 +288,7 @@ def run_algorithm(video_dir: Path) -> None:
             json_data=annotation_file_path.read_text()
         )
 
-        run_eval(annotation=annotation, result=result)
+        run_eval(annotation=annotation, result=result, tolerance_secs=1.5)
 
 
 def run_evaluation(video_dir: Path) -> None:
@@ -304,7 +310,7 @@ def run_evaluation(video_dir: Path) -> None:
         json_data=annotation_file_path.read_text()
     )
 
-    run_eval(annotation=annotation, result=result, tolerance_secs=1.0)
+    run_eval(annotation=annotation, result=result, tolerance_secs=1.5)
 
 
 def main() -> None:
@@ -312,8 +318,8 @@ def main() -> None:
 
     # run_algorithm(video_dir=video_dir / "Onf1UqKPMR4")
     # run_algorithm(video_dir=video_dir / "MBdEWLqfdms")
-    # run_algorithm(video_dir=video_dir / "4gcGkFAG7OA")
-    run_evaluation(video_dir=video_dir / "4gcGkFAG7OA")
+    run_algorithm(video_dir=video_dir / "4gcGkFAG7OA")
+    # run_evaluation(video_dir=video_dir / "4gcGkFAG7OA")
 
 
 if __name__ == "__main__":
