@@ -4,6 +4,6 @@
     "FUNCTIONS_WORKER_RUNTIME": "python",
     "AzureWebJobsFeatureFlags": "EnableWorkerIndexing",
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "PYTHONPATH": ".venv/lib/python3.11/site-packages:src/ytsum:."
+    "PYTHONPATH": ".venv/lib/python3.11/site-packages:src:."
   }
 }
