@@ -55,15 +55,14 @@ def run_and_evaluate_adaptive_detector(
 
 def main() -> None:
     video_dir = Path("data/downloads")
-
-    # run_and_evaluate_adaptive_detector(video_dir=video_dir / "Onf1UqKPMR4")
-    # run_and_evaluate_adaptive_detector(video_dir=video_dir / "MBdEWLqfdms")
-    run_and_evaluate_adaptive_detector(
-        video_dir=video_dir / "4gcGkFAG7OA",
-        threshold=2.5,
-        min_scene_length_secs=1,
-        min_content_value=5,
-    )
+    video_ids = ["Onf1UqKPMR4", "MBdEWLqfdms", "4gcGkFAG7OA"]
+    for video_id in video_ids:
+        run_and_evaluate_adaptive_detector(
+            video_dir=video_dir / video_id,
+            threshold=2.5,
+            min_scene_length_secs=1,
+            min_content_value=5,
+        )
 
 
 if __name__ == "__main__":
