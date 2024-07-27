@@ -68,13 +68,12 @@ class YouTubeVideoDownloader:
             "paths": {"home": str(self._output_dir)},
             "ignoreerrors": True,
             "verbose": True,
+            "outtmpl": "%(id)s.%(ext)s",
             "ffmpeg_location": str(self._ffmpeg_dir),
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info: Optional[Dict[str, object]] = ydl.extract_info(
-                self._url, download=False
-            )
+            info: Optional[Dict[str, object]] = ydl.extract_info(self._url, download=False)
             if info is None:
                 print("No video info found.")
                 return -1

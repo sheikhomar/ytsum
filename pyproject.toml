@@ -40,6 +40,9 @@ requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
 
+[tool.ruff]
+line-length = 120
+
 [tool.pdm]
 distribution = true
 

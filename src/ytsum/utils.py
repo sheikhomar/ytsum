@@ -1,4 +1,18 @@
+from datetime import datetime, timezone
 from typing import Iterable, List, Tuple
+
+
+def now_utc() -> datetime:
+    """
+    Return the current datetime in UTC.
+
+    The issue with `datetime.utcnow()` is that it doesn't set `tzinfo` attribute
+    to indicate that the instance is in fact UTC. This can be problematic when
+    we need use JSON as serialization format.
+
+    See: https://stackoverflow.com/questions/2331592/
+    """
+    return datetime.now(tz=timezone.utc)
 
 
 def convert_timestamp_to_ms(timestamp: str) -> int:
