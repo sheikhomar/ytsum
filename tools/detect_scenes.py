@@ -111,13 +111,13 @@ def generate_plot(df_data: pd.DataFrame, output_path: Path) -> None:
         df_data,
         values="recall",
         index="adaptive_threshold",
-        columns="min_content_value",
+        columns=["min_content_value", "min_scene_length_secs"],
     )
 
     fig, ax = plt.subplots(figsize=(10, 6))
     sns.heatmap(pivot_table, annot=True, fmt=".2f", cmap="viridis", ax=ax)
-    ax.set_title("Recall Heatmap based on Adaptive Threshold and Min Content Value")
-    ax.set_xlabel("Min Content Value")
+    ax.set_title("Scene Detection Recall Heatmap")
+    ax.set_xlabel("Min Content Value & Min Scene Length (secs)")
     ax.set_ylabel("Adaptive Threshold")
     fig.savefig(output_path)
     print(f"Saved plot to {output_path}")
@@ -166,17 +166,18 @@ def main() -> None:
     video_dir = Path("data/downloads")
     video_ids = ["Onf1UqKPMR4", "MBdEWLqfdms", "4gcGkFAG7OA"]
 
-    for threshold in [0.98, 0.95, 0.85, 0.75, 0.60]:
-        run_and_evaluate_ssim_detector(
-            video_dir=video_dir / "4gcGkFAG7OA",
-            threshold=threshold,
-            min_scene_length_secs=1,
-        )
+    run_eval_only(video_dir=video_dir / "4gcGkFAG7OA")
     return
 
-    run_eval_only(video_dir=video_dir / "4gcGkFAG7OA")
+    for threshold in [0.98, 0.96, 0.95, 0.94, 0.90]:
+        for len in [1, 2, 3, 4, 5]:
+            run_and_evaluate_ssim_detector(
+                video_dir=video_dir / "4gcGkFAG7OA",
+                threshold=threshold,
+                min_scene_length_secs=len,
+            )
 
-    for content_val in [1, 3, 5, 7, 9, 10]:
+    for content_val in [2, 4, 6]:
         for threshold in [0.5, 1.0, 2.0, 2.5, 3.0, 3.5]:
             for video_id in video_ids:
                 run_and_evaluate_adaptive_detector(
