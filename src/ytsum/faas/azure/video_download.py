@@ -13,8 +13,6 @@ class YouTubeVideoDownloadProcessorResult(BaseModel):
     video_id: str
     download_result: int = Field(default=0)
     error_message: Optional[str] = Field(default=None)
-    saved_file_paths: List[str] = Field(default_factory=list)
-
     video_info: Optional[VideoMetadata] = Field(default=None)
 
     @property

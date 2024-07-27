@@ -6,7 +6,6 @@ import azure.functions as func
 from azure.functions.decorators.function_app import FunctionBuilder
 from pydantic import BaseModel, Field
 
-from ytsum.faas.azure.helpers.frame_extraction import VideoFrameExtractor
 from ytsum.faas.azure.video_download import (
     YouTubeVideoDownloadProcessor,
     YouTubeVideoDownloadProcessorResult,
@@ -50,15 +49,11 @@ async def start_workflow(
     """
     video_id = req.route_params.get("video_id")
     if not video_id or len(video_id.strip()) < 5:
-        return func.HttpResponse(
-            f"The provided YouTube video ID: {video_id} is not valid.", status_code=400
-        )
+        return func.HttpResponse(f"The provided YouTube video ID: {video_id} is not valid.", status_code=400)
 
     azure_storage_conn_str = os.environ.get("AzureWebJobsStorage")
     if not azure_storage_conn_str:
-        return func.HttpResponse(
-            "Connection string to Azure Storage Account not found", status_code=500
-        )
+        return func.HttpResponse("Connection string to Azure Storage Account not found", status_code=500)
 
     input = ProcessVideoInput(video_id=video_id)
 
@@ -91,9 +86,7 @@ async def get_workflow_status(
     """
     video_id = req.route_params.get("video_id")
     if not video_id or len(video_id.strip()) < 5:
-        return func.HttpResponse(
-            f"The provided YouTube video ID: {video_id} is not valid.", status_code=400
-        )
+        return func.HttpResponse(f"The provided YouTube video ID: {video_id} is not valid.", status_code=400)
 
     return client.create_check_status_response(request=req, instance_id=video_id)
 
@@ -108,9 +101,7 @@ def process_video(context: durable_func.DurableOrchestrationContext):
         name="download_youtube_video",
         input_=input.video_id,
     )
-    download_youtube_video_result = YouTubeVideoDownloadProcessorResult.model_validate(
-        obj=result_obj
-    )
+    download_youtube_video_result = YouTubeVideoDownloadProcessorResult.model_validate(obj=result_obj)
     print(f"Download result: {download_youtube_video_result}")
 
     # Step 3: Check if the download was successful
@@ -123,30 +114,16 @@ def process_video(context: durable_func.DurableOrchestrationContext):
         ).model_dump()
 
     # Step 4: Check if any MP4 files were downloaded
-    mp4_file_paths = [
-        file_path
-        for file_path in download_youtube_video_result.saved_file_paths
-        if file_path.endswith(".mp4")
-    ]
-    if len(mp4_file_paths) != 1:
+    video_file_path = download_youtube_video_result.video_info.video_file_path
+
+    if video_file_path is None:
+        artifact_paths_str = ", ".join(download_youtube_video_result.video_info.artifact_paths)
+        err_msg = f"No MP4 files found after download. Following artifacts where downloaded: {artifact_paths_str}"
         return ProcessVideoOutput(
             video_id=input.video_id,
             stage="mp4_file_check",
-            error_message=(
-                "No MP4 files found after download. "
-                f"Expected exactly 1 but found {len(mp4_file_paths)}."
-            ),
+            error_message=err_msg,
         ).model_dump()
-
-    # Step 5: Call the `extract_frames` activity function
-    extracted_frames = yield context.call_activity(
-        name="extract_frames",
-        input_=ExtractFramesInput(
-            video_id=input.video_id,
-            video_file_path=mp4_file_paths[0],
-        ).model_dump(),
-    )
-    print(f"Extracted frames: {extracted_frames}")
 
     # Final step: Return the completed status
     return ProcessVideoOutput(
@@ -165,30 +142,4 @@ async def download_youtube_video(videoId: str) -> Dict[str, object]:
 
     processor = YouTubeVideoDownloadProcessor(video_id=videoId, storage=blob_storage)
     result = await processor.run()
-    return result.model_dump()
-
-
-@blueprint.activity_trigger(input_name="inputDict")
-async def extract_frames(inputDict: Dict[str, object]) -> Dict[str, object]:
-    input = ExtractFramesInput.model_validate(obj=inputDict)
-
-    azure_storage_conn_str = os.environ.get("AzureWebJobsStorage")
-    videos_store = AzureBlobStorage(
-        connection_string=azure_storage_conn_str,
-        container_name="youtube-videos",
-    )
-
-    output_store = AzureBlobStorage(
-        connection_string=azure_storage_conn_str,
-        container_name="extracted-frames",
-    )
-
-    processor = VideoFrameExtractor(
-        video_id=input.video_id,
-        video_file_path=input.video_file_path,
-        input_storage=videos_store,
-        output_storage=output_store,
-    )
-    result = await processor.run()
-
     return result.model_dump()
