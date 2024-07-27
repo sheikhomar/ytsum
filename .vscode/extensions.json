@@ -3,6 +3,7 @@
     "charliermarsh.ruff",
     "fb-pyre-check.pyre-vscode",
     "esbenp.prettier-vscode",
-    "ms-azuretools.vscode-bicep"
+    "ms-azuretools.vscode-bicep",
+    "DurableFunctionsMonitor.durablefunctionsmonitor"
   ]
 }
