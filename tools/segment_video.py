@@ -1,5 +1,7 @@
+from pathlib import Path
+
 import click
-from ytsum.models import TranscribedPhrase, Transcript
+from ytsum.transcription.parsers import parse_vtt_file
 from ytsum.transcription.segmentation.common import NoOpSegmenter, TranscriptSegmenter
 
 
@@ -11,12 +13,16 @@ from ytsum.transcription.segmentation.common import NoOpSegmenter, TranscriptSeg
     help="The YouTube video ID to segment.",
 )
 def main(video_id: str) -> None:
-    transcript = Transcript(
-        phrases=[
-            TranscribedPhrase(text="Hello", starts_at="0:00:00.000"),
-            TranscribedPhrase(text="world", starts_at="0:00:01.000"),
-        ]
-    )
+    downloads_dir = Path("data/downloads")
+    video_dir = downloads_dir / video_id
+    vtt_file_paths = list(video_dir.glob("*.en.vtt"))
+    if len(vtt_file_paths) != 1:
+        click.echo(f"Expected 1 VTT file, but found {len(vtt_file_paths)}")
+        return
+
+    vtt_file_path = vtt_file_paths[0]
+
+    transcript = parse_vtt_file(file_path=vtt_file_path)
 
     segmenter: TranscriptSegmenter = NoOpSegmenter()
     output = segmenter.run(transcript=transcript)

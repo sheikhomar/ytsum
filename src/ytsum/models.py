@@ -4,23 +4,20 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from ytsum.utils import convert_timestamp_to_ms
-
 
 class TranscribedPhrase(BaseModel):
     text: str = Field(..., description="The transcribed text.")
-    starts_at: str = Field(..., description="Start time of the phrase in the format HH:MM:SS.mmm.")
-
-    @property
-    def starts_at_ms(self) -> int:
-        return convert_timestamp_to_ms(timestamp=self.starts_at)
+    start_time_ms: Optional[int] = Field(
+        default=None,
+        description="Start time of the phrase in milliseconds.",
+    )
 
 
 class Transcript(BaseModel):
     phrases: List[TranscribedPhrase]
 
     def get_phrases_in_range(self, start_ms: int, end_ms: int) -> List[TranscribedPhrase]:
-        return [phrase for phrase in self.phrases if phrase.starts_at_ms >= start_ms and phrase.starts_at_ms < end_ms]
+        return [phrase for phrase in self.phrases if phrase.start_time_ms >= start_ms and phrase.start_time_ms < end_ms]
 
     def get_end_time_in_ms(self) -> int:
         """
@@ -29,7 +26,7 @@ class Transcript(BaseModel):
         Returns:
             int: The end time of the transcript in milliseconds.
         """
-        return max(phrase.starts_at_ms for phrase in self.phrases)
+        return max(phrase.start_time_ms for phrase in self.phrases)
 
 
 class TranscriptSegment(BaseModel):
