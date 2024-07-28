@@ -63,7 +63,9 @@ When determining sentence endings, consider the context and natural pauses in sp
 
 For longer pauses or breaks in speech, you may use a new paragraph to indicate a significant shift in topic or speaker.
 
-Provide your punctuated version of the transcript in JSON format. Create `paragraph` item for each paragraph. Ensure to capture the EXACT `start_phrase` and `end_phrase` from the raw transcript. Include a boolean field `is_complete` to indicate if the paragraph is complete or not.
+Provide your punctuated version of the transcript in JSON format. Create `paragraph` item for each paragraph. Ensure to capture the EXACT `start_phrase` and `end_phrase` from the RAW transcript. Only take the EXACT text from the RAW transcript, otherwise the verification process will fail and I will lose my job.
+
+Include a boolean field `is_complete` to indicate if the paragraph is complete or not.
 
 Here is an example to illustrate the task:
 
@@ -89,6 +91,8 @@ Output:
   ]
 }
 ```
+
+Remember to copy EXACTLY the text from the RAW transcript in `start_phrase` and `end_phrase`. If you don't, I will lose my job. And I don't want to lose my job. So please, copy EXACTLY the text from the RAW transcript. Thank you.
 """
 
 
@@ -134,7 +138,9 @@ class TranscriptFormatter:
                 if hallucination_count >= 5:
                     raise ValueError("The language model has hallucinated too many times.")
                 hallucination_count += 1
-                batch_end_index -= 10 * hallucination_count
+
+                # Rewind the batch end index to retry the hallucinated batch
+                batch_end_index -= int(self._batch_size / 10) * hallucination_count
                 print(f"  - The language model has hallucinated (count={hallucination_count}). Retrying...")
                 continue
             hallucination_count = 0

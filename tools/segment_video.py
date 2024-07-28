@@ -30,7 +30,7 @@ async def run(video_id: str) -> None:
 
     formatter = TranscriptFormatter(
         strong_llm=strong_llm,
-        batch_size=256,
+        batch_size=150,
     )
 
     await formatter.run(transcript=transcript)
