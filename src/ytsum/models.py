@@ -1,6 +1,6 @@
 import gzip
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -8,8 +8,8 @@ from ytsum.utils import convert_timestamp_to_ms
 
 
 class TranscribedPhrase(BaseModel):
-    text: str
-    starts_at: str
+    text: str = Field(..., description="The transcribed text.")
+    starts_at: str = Field(..., description="Start time of the phrase in the format HH:MM:SS.mmm.")
 
     @property
     def starts_at_ms(self) -> int:
@@ -22,8 +22,28 @@ class Transcript(BaseModel):
     def get_phrases_in_range(self, start_ms: int, end_ms: int) -> List[TranscribedPhrase]:
         return [phrase for phrase in self.phrases if phrase.starts_at_ms >= start_ms and phrase.starts_at_ms < end_ms]
 
-    def get_end_time(self) -> int:
-        return max(phrase.starts_at_ms for phrase in self.phrases) + 1000
+    def get_end_time_in_ms(self) -> int:
+        """
+        Get the end time of the transcript in milliseconds.
+
+        Returns:
+            int: The end time of the transcript in milliseconds.
+        """
+        return max(phrase.starts_at_ms for phrase in self.phrases)
+
+
+class TranscriptSegment(BaseModel):
+    start_time_ms: int = Field(..., description="Start time of the segment in milliseconds.")
+    end_time_ms: int = Field(..., description="End time of the segment in milliseconds.")
+    phrases: List[TranscribedPhrase] = Field(
+        default_factory=list,
+        description="Transcribed phrases in the segment.",
+    )
+    title: Optional[str] = Field(default=None)
+
+    @property
+    def text(self) -> str:
+        return " ".join(phrase.text for phrase in self.phrases)
 
 
 class Frame(BaseModel):
