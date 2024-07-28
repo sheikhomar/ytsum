@@ -16,17 +16,11 @@ class TranscribedPhrase(BaseModel):
         return convert_timestamp_to_ms(timestamp=self.starts_at)
 
 
-class Transcription(BaseModel):
+class Transcript(BaseModel):
     phrases: List[TranscribedPhrase]
 
-    def get_phrases_in_range(
-        self, start_ms: int, end_ms: int
-    ) -> List[TranscribedPhrase]:
-        return [
-            phrase
-            for phrase in self.phrases
-            if phrase.starts_at_ms >= start_ms and phrase.starts_at_ms < end_ms
-        ]
+    def get_phrases_in_range(self, start_ms: int, end_ms: int) -> List[TranscribedPhrase]:
+        return [phrase for phrase in self.phrases if phrase.starts_at_ms >= start_ms and phrase.starts_at_ms < end_ms]
 
     def get_end_time(self) -> int:
         return max(phrase.starts_at_ms for phrase in self.phrases) + 1000
