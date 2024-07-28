@@ -4,6 +4,7 @@ import anyio
 import click
 from ytsum.config import Settings, init_settings
 from ytsum.llms.openai import OpenAILLM
+from ytsum.transcription.formatter import TranscriptFormatter
 from ytsum.transcription.parsers import parse_vtt_file
 from ytsum.transcription.segmentation.common import TranscriptSegmenter
 from ytsum.transcription.segmentation.llm import NaiveLLMGuidedSegmenter
@@ -26,6 +27,14 @@ async def run(video_id: str) -> None:
         settings.OPEN_AI_API_KEY,
         model_name=settings.OPEN_AI_STRONG_MODEL_NAME,
     )
+
+    formatter = TranscriptFormatter(
+        strong_llm=strong_llm,
+        batch_size=256,
+    )
+
+    await formatter.run(transcript=transcript)
+    return
 
     segmenter: TranscriptSegmenter = NaiveLLMGuidedSegmenter(
         strong_llm=strong_llm,
