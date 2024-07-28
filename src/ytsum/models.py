@@ -39,7 +39,8 @@ class TranscriptSegment(BaseModel):
         default_factory=list,
         description="Transcribed phrases in the segment.",
     )
-    title: Optional[str] = Field(default=None)
+    title: Optional[str] = Field(default=None, description="Title of the segment.")
+    summary: Optional[str] = Field(default=None, description="A brief summary of the segment.")
 
     @property
     def text(self) -> str:
