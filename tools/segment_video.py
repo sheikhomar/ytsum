@@ -1,13 +1,14 @@
+import os
 from pathlib import Path
 
 import anyio
 import click
 from ytsum.config import Settings, init_settings
 from ytsum.llms.openai import OpenAILLM
-from ytsum.transcription.formatter import TranscriptFormatter
+from ytsum.repositories.video import VideoRepository
+from ytsum.storage.azure import AzureBlobStorage
+from ytsum.transcription.formatter_v2 import TranscriptFormatter
 from ytsum.transcription.parsers import parse_vtt_file
-from ytsum.transcription.segmentation.common import TranscriptSegmenter
-from ytsum.transcription.segmentation.llm import NaiveLLMGuidedSegmenter
 
 
 async def run(video_id: str) -> None:
@@ -28,24 +29,22 @@ async def run(video_id: str) -> None:
         model_name=settings.OPEN_AI_STRONG_MODEL_NAME,
     )
 
+    azure_storage_conn_str = os.environ.get("AzureWebJobsStorage")
+    storage = AzureBlobStorage(
+        connection_string=azure_storage_conn_str,
+        container_name="youtube-videos",
+    )
+
+    repo = VideoRepository(storage=storage)
+
     formatter = TranscriptFormatter(
         strong_llm=strong_llm,
-        batch_size=150,
+        batch_size=1000,
     )
 
-    await formatter.run(transcript=transcript)
-    return
+    formatted_transcript = await formatter.run(transcript=transcript)
 
-    segmenter: TranscriptSegmenter = NaiveLLMGuidedSegmenter(
-        strong_llm=strong_llm,
-        chunk_size=10000,
-    )
-    output = await segmenter.run(transcript=transcript)
-
-    for i, segment in enumerate(output):
-        print("-" * 80)
-        print(f"Segment {i + 1}: {segment.title}")
-        print(f" - Summary: {segment.summary}\n")
+    await repo.save_formatted_transcript(video_id=video_id, transcript=formatted_transcript)
 
 
 @click.command()
