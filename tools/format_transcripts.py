@@ -9,6 +9,7 @@ from ytsum.repositories.video import VideoMetadata, VideoRepository
 from ytsum.storage.azure import AzureBlobStorage
 from ytsum.transcription.formatter_v2 import TranscriptFormatter
 from ytsum.transcription.parsers import parse_vtt_from_string
+from ytsum.transcription.topics import TopicCreator
 
 
 def find_transcript_file_path(video_info: VideoMetadata) -> Optional[str]:
@@ -31,6 +32,8 @@ async def run() -> None:
         container_name="youtube-videos",
     )
 
+    topic_creator = TopicCreator(strong_llm=strong_llm)
+
     repo = VideoRepository(storage=storage)
 
     videos = await repo.find_all()
@@ -44,6 +47,14 @@ async def run() -> None:
 
         if video_has_formatted_transcript:
             print(f"Video {video_info.id} already has a formatted transcript, skipping...")
+
+            transcript_text = await repo.read_formatted_transcript(video_id=video_info.id)
+            print(f"Transcript text length {len(transcript_text)}")
+
+            sections = await topic_creator.run(transcript_text=transcript_text)
+            print(sections)
+            break
+
             continue
 
         transcript_path = find_transcript_file_path(video_info=video_info)

@@ -127,3 +127,16 @@ class VideoRepository:
         """
         path = f"{VIDEO_ARTIFACTS_PREFIX}{video_id}/formatted-transcript.txt"
         return await self._storage.exists(path=path)
+
+    async def read_formatted_transcript(self, video_id: str) -> str:
+        """
+        Read the formatted transcript of a video.
+
+        Args:
+            video_id (str): The ID of the video.
+
+        Returns:
+            str: The formatted transcript.
+        """
+        path = f"{VIDEO_ARTIFACTS_PREFIX}{video_id}/formatted-transcript.txt"
+        return await self._storage.read_text(path=path)
