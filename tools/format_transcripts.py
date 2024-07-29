@@ -46,16 +46,10 @@ async def run() -> None:
         video_has_formatted_transcript = await repo.has_formatted_transcript(video_id=video_info.id)
 
         if video_has_formatted_transcript:
-            print(f"Video {video_info.id} already has a formatted transcript, skipping...")
-
-            transcript_text = await repo.read_formatted_transcript(video_id=video_info.id)
-            print(f"Transcript text length {len(transcript_text)}")
-
-            sections = await topic_creator.run(transcript_text=transcript_text)
-            print(sections)
-            break
-
-            continue
+            formatted_transcript = await repo.read_formatted_transcript(video_id=video_info.id)
+            if len(formatted_transcript) > 10:
+                print(f"Video {video_info.id} already has a formatted transcript, skipping...")
+                continue
 
         transcript_path = find_transcript_file_path(video_info=video_info)
         if transcript_path is None:
