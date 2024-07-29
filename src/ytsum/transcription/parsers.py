@@ -50,3 +50,36 @@ def parse_vtt_file(file_path: Path) -> Transcript:
                     )
                 )
     return Transcript(phrases=phrases)
+
+
+def parse_vtt_from_string(vtt_string: str) -> Transcript:
+    """Parse a WebVTT string and extract transcribed phrases.
+
+    Args:
+        vtt_string (str): The WebVTT string.
+
+    Returns:
+        Transcript: The parsed transcript.
+    """
+
+    vtt = webvtt.from_string(string=vtt_string)
+    phrases: List[TranscribedPhrase] = []
+    for caption in vtt.captions:
+        raw_text = caption.raw_text
+        lines = raw_text.split("\n")
+        for line in lines:
+            has_cue_tags = webvtt.Caption.CUE_TEXT_TAGS.findall(line)
+            if not has_cue_tags:
+                continue
+
+            # Only process lines with cue tags
+            modified_line = f"<{caption.start}>{line}"
+            matches = PHRASE_PATTERN.findall(modified_line)
+            for start_time_str, text in matches:
+                phrases.append(
+                    TranscribedPhrase(
+                        text=text.strip(),
+                        start_time_ms=convert_timestamp_to_ms(start_time_str),
+                    )
+                )
+    return Transcript(phrases=phrases)

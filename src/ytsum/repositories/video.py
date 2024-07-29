@@ -55,7 +55,7 @@ class VideoRepository:
 
         result: List[VideoMetadata] = []
         async for path in self._storage.list_files(VIDEO_META_DATA_PREFIX):
-            data = self._storage.load_model(path=path, response_model=VideoMetadata)
+            data = await self._storage.load_model(path=path, response_model=VideoMetadata)
             result.append(data)
         return result
 
