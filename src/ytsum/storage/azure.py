@@ -63,3 +63,9 @@ class AzureBlobStorage(BlobStorage):
     async def upload_blob(self, data: Blob, destination_path: str) -> None:
         blob_client: BlobClient = self._container_client.get_blob_client(blob=destination_path)
         await blob_client.upload_blob(data=data, overwrite=True)
+
+    async def read_text(self, path: str) -> str:
+        blob_client: BlobClient = self._container_client.get_blob_client(blob=path)
+        blob = await blob_client.download_blob()
+        data = await blob.readall()
+        return data.decode("utf-8")

@@ -65,3 +65,8 @@ class LocalDiskBlobStorage(BlobStorage):
         await aiofiles.os.makedirs(full_path.parent, exist_ok=True)
         async with aiofiles.open(full_path, mode="wb") as f:
             await f.write(data)
+
+    async def read_text(self, path: str) -> str:
+        full_path = self._data_dir / path
+        async with aiofiles.open(full_path, mode="r") as f:
+            return await f.read()

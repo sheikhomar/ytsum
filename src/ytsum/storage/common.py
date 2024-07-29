@@ -64,3 +64,7 @@ class BlobStorage(ABC):
             destination_path: The path to save the blob to in the storage system.
         """
         raise NotImplementedError
+
+    @abstractmethod
+    async def read_text(self, path: str) -> str:
+        raise NotImplementedError
