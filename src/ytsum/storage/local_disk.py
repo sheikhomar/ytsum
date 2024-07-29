@@ -5,7 +5,7 @@ import aiofiles
 import aiofiles.os
 import aioshutil
 from pydantic import BaseModel
-from ytsum.storage.common import BlobStorage, ModelType
+from ytsum.storage.common import Blob, BlobStorage, ModelType
 
 
 class LocalDiskBlobStorage(BlobStorage):
@@ -59,3 +59,14 @@ class LocalDiskBlobStorage(BlobStorage):
         src_path = self._data_dir / src_file_path
         await aiofiles.os.makedirs(destination_path.parent, exist_ok=True)
         aioshutil.copyfile(src=src_path, dst=destination_path)
+
+    async def upload_blob(self, data: Blob, destination_path: str) -> None:
+        full_path = self._data_dir / destination_path
+        await aiofiles.os.makedirs(full_path.parent, exist_ok=True)
+        async with aiofiles.open(full_path, mode="wb") as f:
+            await f.write(data)
+
+    async def read_text(self, path: str) -> str:
+        full_path = self._data_dir / path
+        async with aiofiles.open(full_path, mode="r") as f:
+            return await f.read()

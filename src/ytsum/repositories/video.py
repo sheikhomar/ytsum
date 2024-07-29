@@ -55,7 +55,7 @@ class VideoRepository:
 
         result: List[VideoMetadata] = []
         async for path in self._storage.list_files(VIDEO_META_DATA_PREFIX):
-            data = self._storage.load_model(path=path, response_model=VideoMetadata)
+            data = await self._storage.load_model(path=path, response_model=VideoMetadata)
             result.append(data)
         return result
 
@@ -103,3 +103,40 @@ class VideoRepository:
             await self._storage.save_file(src_file_path=local_file_path, destination_path=destination_path)
             result[local_file_path] = destination_path
         return result
+
+    async def save_formatted_transcript(self, video_id: str, transcript: str) -> None:
+        """
+        Save the formatted transcript of a video.
+
+        Args:
+            video_id (str): The ID of the video.
+            transcript (str): The formatted transcript.
+        """
+        path = f"{VIDEO_ARTIFACTS_PREFIX}{video_id}/formatted-transcript.txt"
+        await self._storage.upload_blob(data=transcript, destination_path=path)
+
+    async def has_formatted_transcript(self, video_id: str) -> bool:
+        """
+        Check if a video has a formatted transcript.
+
+        Args:
+            video_id (str): The ID of the video.
+
+        Returns:
+            bool: True if the video has a formatted transcript, False otherwise.
+        """
+        path = f"{VIDEO_ARTIFACTS_PREFIX}{video_id}/formatted-transcript.txt"
+        return await self._storage.exists(path=path)
+
+    async def read_formatted_transcript(self, video_id: str) -> str:
+        """
+        Read the formatted transcript of a video.
+
+        Args:
+            video_id (str): The ID of the video.
+
+        Returns:
+            str: The formatted transcript.
+        """
+        path = f"{VIDEO_ARTIFACTS_PREFIX}{video_id}/formatted-transcript.txt"
+        return await self._storage.read_text(path=path)

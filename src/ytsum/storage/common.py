@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import AsyncIterator, Type, TypeVar
+from typing import IO, AnyStr, AsyncIterable, AsyncIterator, Iterable, Type, TypeVar, Union
 
 from pydantic import BaseModel
 
 ModelType = TypeVar("ModelType", bound=BaseModel)
+Blob = Union[bytes, str, Iterable[AnyStr], AsyncIterable[AnyStr], IO[AnyStr]]
 
 
 class BlobStorage(ABC):
@@ -51,4 +52,19 @@ class BlobStorage(ABC):
             src_file_path: The path to the file in the storage system.
             destination_path: The path to save the file to on the local file
         """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def upload_blob(self, data: Blob, destination_path: str) -> None:
+        """
+        Upload a blob to the storage system.
+
+        Args:
+            data: The blob to upload.
+            destination_path: The path to save the blob to in the storage system.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    async def read_text(self, path: str) -> str:
         raise NotImplementedError

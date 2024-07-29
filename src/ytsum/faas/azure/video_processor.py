@@ -6,10 +6,13 @@ import azure.functions as func
 from azure.functions.decorators.function_app import FunctionBuilder
 from pydantic import BaseModel, Field
 
+from ytsum.config import Settings, init_settings
+from ytsum.faas.azure.transcript_processor import YouTubeTranscriptFormatter, YouTubeTranscriptFormatterResult
 from ytsum.faas.azure.video_download import (
     YouTubeVideoDownloadProcessor,
     YouTubeVideoDownloadProcessorResult,
 )
+from ytsum.llms.openai import OpenAILLM
 from ytsum.storage.azure import AzureBlobStorage
 
 blueprint = durable_func.Blueprint()
@@ -125,6 +128,21 @@ def process_video(context: durable_func.DurableOrchestrationContext):
             error_message=err_msg,
         ).model_dump()
 
+    # Step 5: Format the transcript
+    result_obj = yield context.call_activity(
+        name="format_transcript",
+        input_=input.video_id,
+    )
+    format_transcript_result = YouTubeTranscriptFormatterResult.model_validate(obj=result_obj)
+    print(f"Format transcript result: {format_transcript_result}")
+
+    if format_transcript_result.error_message:
+        return ProcessVideoOutput(
+            video_id=input.video_id,
+            stage="format_transcript",
+            error_message=format_transcript_result.error_message,
+        ).model_dump()
+
     # Final step: Return the completed status
     return ProcessVideoOutput(
         video_id=input.video_id,
@@ -142,4 +160,23 @@ async def download_youtube_video(videoId: str) -> Dict[str, object]:
 
     processor = YouTubeVideoDownloadProcessor(video_id=videoId, storage=blob_storage)
     result = await processor.run()
+    return result.model_dump()
+
+
+@blueprint.activity_trigger(input_name="videoId")
+async def format_transcript(videoId: str) -> Dict[str, object]:
+    azure_storage_conn_str = os.environ.get("AzureWebJobsStorage")
+    blob_storage = AzureBlobStorage(
+        connection_string=azure_storage_conn_str,
+        container_name="youtube-videos",
+    )
+
+    settings: Settings = init_settings()
+    strong_llm = OpenAILLM(
+        settings.OPEN_AI_API_KEY,
+        model_name=settings.OPEN_AI_STRONG_MODEL_NAME,
+    )
+
+    processor = YouTubeTranscriptFormatter(video_id=videoId, strong_llm=strong_llm, storage=blob_storage)
+    result: YouTubeTranscriptFormatterResult = await processor.run()
     return result.model_dump()

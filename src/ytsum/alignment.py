@@ -8,7 +8,7 @@ from ytsum.models import (
     Frame,
     FrameOutput,
     TranscribedPhrase,
-    Transcription,
+    Transcript,
 )
 from ytsum.utils import convert_timestamp_to_ms
 
@@ -17,10 +17,7 @@ PHRASE_PATTERN = re.compile(r"<(\d{2}:\d{2}:\d{2}\.\d{3})>(?:<c>)?([^<]+)(?:</c>
 
 def parse_subtitle_line(line: str) -> List[TranscribedPhrase]:
     matches = PHRASE_PATTERN.findall(line)
-    return [
-        TranscribedPhrase(text=text.strip(), starts_at=start_time)
-        for start_time, text in matches
-    ]
+    return [TranscribedPhrase(text=text.strip(), starts_at=start_time) for start_time, text in matches]
 
 
 class SubtitleFrameAligner:
@@ -61,9 +58,7 @@ class SubtitleFrameAligner:
             frame_starts_at_ms = convert_timestamp_to_ms(timestamp=parts[2])
             frame_ends_at_ms = convert_timestamp_to_ms(timestamp=parts[3])
 
-            phrases = transcription.get_phrases_in_range(
-                start_ms=frame_starts_at_ms, end_ms=frame_ends_at_ms
-            )
+            phrases = transcription.get_phrases_in_range(start_ms=frame_starts_at_ms, end_ms=frame_ends_at_ms)
 
             output.frames.append(
                 Frame(
@@ -84,7 +79,7 @@ class SubtitleFrameAligner:
 
         output.save(output_file=self._output_file)
 
-    def _get_transcription(self) -> Transcription:
+    def _get_transcription(self) -> Transcript:
         phrases: List[TranscribedPhrase] = []
 
         vtt = webvtt.read(str(self._vtt_file))
@@ -97,7 +92,7 @@ class SubtitleFrameAligner:
                 if has_cue_tags:
                     modified_line = f"<{caption.start}>{line}"
                     phrases.extend(parse_subtitle_line(line=modified_line))
-        return Transcription(phrases=phrases)
+        return Transcript(phrases=phrases)
 
 
 if __name__ == "__main__":
