@@ -40,10 +40,10 @@ class VideoRepository:
         self._storage = storage
 
     async def start(self) -> None:
-        self._storage.start()
+        await self._storage.start()
 
     async def shutdown(self) -> None:
-        self._storage.shutdown()
+        await self._storage.shutdown()
 
     async def find_all(self) -> List[VideoMetadata]:
         """

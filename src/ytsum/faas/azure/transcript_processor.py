@@ -49,13 +49,15 @@ class YouTubeTranscriptFormatter:
         print(f"Processing transcript at {transcript_path}...")
         raw_transcript_text = await self._storage.read_text(path=transcript_path)
 
-        print(f"Raw transcript size: {len(raw_transcript_text)}")
+        print(f"Raw transcript size: {len(raw_transcript_text)}\n{raw_transcript_text[:100]}")
 
         transcript = parse_vtt_from_string(vtt_string=raw_transcript_text)
 
+        print(f"Transcript parsed with {len(transcript.phrases)} phrases")
+
         formatted_transcript = await self._formatter.run(transcript=transcript)
 
-        print(f"Formatted transcript size: {len(raw_transcript_text)}")
+        print(f"Formatted transcript size: {len(formatted_transcript)}")
 
         await self._repo.save_formatted_transcript(video_id=video_info.id, transcript=formatted_transcript)
 
@@ -63,6 +65,6 @@ class YouTubeTranscriptFormatter:
 
     def _find_transcript_file_path(self, video_info: VideoMetadata) -> Optional[str]:
         for path in video_info.artifact_paths:
-            if path.endswith(".en.vtt"):
+            if path.endswith(".en-orig.vtt"):
                 return path
         return None
