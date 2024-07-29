@@ -5,17 +5,13 @@ import aiofiles
 import aiofiles.os
 from azure.storage.blob.aio import BlobClient, BlobServiceClient
 from pydantic import BaseModel
-from ytsum.storage.common import BlobStorage, ModelType
+from ytsum.storage.common import Blob, BlobStorage, ModelType
 
 
 class AzureBlobStorage(BlobStorage):
     def __init__(self, connection_string: str, container_name: str) -> None:
-        self._blob_service_client = BlobServiceClient.from_connection_string(
-            conn_str=connection_string
-        )
-        self._container_client = self._blob_service_client.get_container_client(
-            container=container_name
-        )
+        self._blob_service_client = BlobServiceClient.from_connection_string(conn_str=connection_string)
+        self._container_client = self._blob_service_client.get_container_client(container=container_name)
 
     async def start(self) -> None:
         container_exists = await self._container_client.exists()
@@ -48,24 +44,22 @@ class AzureBlobStorage(BlobStorage):
         return await blob_client.exists()
 
     async def save_file(self, src_file_path: Path, destination_path: str) -> None:
-        blob_client: BlobClient = self._container_client.get_blob_client(
-            blob=destination_path
-        )
+        blob_client: BlobClient = self._container_client.get_blob_client(blob=destination_path)
         async with aiofiles.open(src_file_path, "rb") as fh:
             await blob_client.upload_blob(data=fh, overwrite=True)
 
     async def list_files(self, path_prefix: str) -> AsyncIterator[str]:
-        async for blob in self._container_client.list_blobs(
-            name_starts_with=path_prefix
-        ):
+        async for blob in self._container_client.list_blobs(name_starts_with=path_prefix):
             yield blob.name
 
     async def download_file(self, src_file_path: str, destination_path: Path) -> None:
-        blob_client: BlobClient = self._container_client.get_blob_client(
-            blob=src_file_path
-        )
+        blob_client: BlobClient = self._container_client.get_blob_client(blob=src_file_path)
         await aiofiles.os.makedirs(destination_path.parent, exist_ok=True)
         async with aiofiles.open(destination_path, "wb") as fh:
             downloader = await blob_client.download_blob()
             data = await downloader.readall()
             await fh.write(data)
+
+    async def upload_blob(self, data: Blob, destination_path: str) -> None:
+        blob_client: BlobClient = self._container_client.get_blob_client(blob=destination_path)
+        await blob_client.upload_blob(data=data, overwrite=True)
